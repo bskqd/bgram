@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 from accounts.utils.authorization import generate_token
 from mixins.models import DateTimeABC
 
+__all__ = ['EmailConfirmationToken']
+
 
 class EmailConfirmationToken(DateTimeABC):
     __tablename__ = 'email_confirmation_tokens'

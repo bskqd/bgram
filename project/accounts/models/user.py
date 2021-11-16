@@ -1,22 +1,26 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
+from chat.models import chatroom_members_association_table
 from core.config import settings
-from mixins.models import DateTimeABC, Photo
+from mixins.models import DateTimeABC, Photo, DescriptionABC, IsActiveABC
+
+__all__ = ['User', 'UserPhoto']
 
 
-class User(DateTimeABC):
+class User(DateTimeABC, DescriptionABC, IsActiveABC):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
     nickname = Column(String, unique=True)
     email = Column(String, unique=True)
     password = Column(String)
-    description = Column(String, default='')
-    is_active = Column(Boolean, default=True)
 
     email_confirmation_tokens = relationship('EmailConfirmationToken', back_populates='user')
     photos = relationship('UserPhoto', back_populates='user', lazy='joined')
+    chat_rooms = relationship(
+        'ChatRoom', secondary=chatroom_members_association_table, back_populates='members'
+    )
 
     def check_password(self, plain_text_password: str) -> bool:
         # Checks if plain texted password is the same as the user password.

@@ -14,7 +14,6 @@ def send_email(background_tasks: BackgroundTasks,
     """
     Background task for sending emails.
     """
-
     message = MessageSchema(subject=subject,
                             recipients=[email_to] if isinstance(email_to, str) else email_to,
                             template_body=template_body,

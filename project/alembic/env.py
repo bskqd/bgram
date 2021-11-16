@@ -3,10 +3,11 @@ from logging.config import fileConfig
 from alembic import context
 
 from accounts.models import EmailConfirmationToken, User, UserPhoto
+from chat.models import ChatRoom, chatroom_members_association_table
 from core.config import settings
 from database import engine, Base
 
-__all__ = [EmailConfirmationToken, User, UserPhoto]
+__all__ = [EmailConfirmationToken, User, UserPhoto, ChatRoom, chatroom_members_association_table]
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

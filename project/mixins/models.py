@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, func, String, Integer
+from sqlalchemy import Column, DateTime, func, String, Integer, Boolean
 
 from database import Base
 
@@ -8,6 +8,18 @@ class DateTimeABC(Base):
 
     created_at = Column(DateTime, default=func.now())
     modified_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class DescriptionABC(Base):
+    __abstract__ = True
+
+    description = Column(String, default='')
+
+
+class IsActiveABC(Base):
+    __abstract__ = True
+
+    is_active = Column(Boolean, default=True)
 
 
 class Photo(DateTimeABC):
