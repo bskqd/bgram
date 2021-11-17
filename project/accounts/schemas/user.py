@@ -26,6 +26,7 @@ class User(UserBase):
     id: int
     is_active: bool
     photos: List[mixins_schemas.FilesSchema]
+    chat_rooms: List[int]
 
     class Config:
         orm_mode = True

@@ -3,10 +3,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File
 from fastapi_utils.cbv import cbv
 from sqlalchemy.engine.result import ChunkedIteratorResult
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, lazyload
 
 from accounts.crud import user as user_crud
 from accounts.dependencies import user as user_dependencies
+from accounts.models import User
 from accounts.schemas import user as user_schemas
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views

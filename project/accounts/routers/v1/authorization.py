@@ -25,7 +25,10 @@ async def registration_view(
 ) -> str:
     user_data = user.dict()
     user_data['is_active'] = False
-    user = await user_crud.create_user(user_data, db_session)
+    nickname = user_data.pop('nickname')
+    email = user_data.pop('email')
+    password = user_data.pop('password')
+    user = await user_crud.create_user(nickname, email, password, db_session, **user_data)
     token = await authorization_services.create_email_confirmation_token(user, db_session)
     email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
     send_email(

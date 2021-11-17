@@ -10,9 +10,14 @@ from accounts.utils.user import get_hashed_password
 from mixins import utils as mixins_utils, dependencies as mixins_dependencies
 
 
-async def create_user(user_data: dict, db_session: Optional[Session] = Depends(mixins_dependencies.db_session)) -> User:
-    user_data['password'] = get_hashed_password(user_data.pop('password'))
-    user = User(**user_data)
+async def create_user(
+        nickname: str,
+        email: str,
+        password: str,
+        db_session: Optional[Session] = Depends(mixins_dependencies.db_session),
+        **kwargs
+) -> User:
+    user = User(nickname=nickname, email=email, password=get_hashed_password(password), **kwargs)
     await mixins_utils.create_object_in_database(user, db_session)
     return user
 
@@ -22,7 +27,7 @@ async def get_users(
         db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
 ) -> List[User]:
     users = await db_session.execute(available_db_data)
-    return users.scalars().all()
+    return users.unique().scalars().all()
 
 
 async def get_user(
