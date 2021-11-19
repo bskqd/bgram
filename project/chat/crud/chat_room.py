@@ -1,28 +1,26 @@
-from typing import Optional
 
-from fastapi import Depends
+from typing import Optional, List
+
+from sqlalchemy import select
+from sqlalchemy.engine import ChunkedIteratorResult
 from sqlalchemy.orm import Session
 
 from chat.models import ChatRoom
-from mixins import utils as mixins_utils, dependencies as mixins_dependencies
+from mixins import utils as mixins_utils
 
 
-async def create_chat_room(
-        name: str,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session),
-        **kwargs
-) -> ChatRoom:
+async def create_chat_room(name: str, db_session: Session, **kwargs) -> ChatRoom:
     chat_room = ChatRoom(name=name, **kwargs)
     await mixins_utils.create_object_in_database(chat_room, db_session)
     return chat_room
 
 
-# async def get_users(
-#         available_db_data: Optional[ChunkedIteratorResult] = select(User),
-#         db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
-# ) -> List[User]:
-#     users = await db_session.execute(available_db_data)
-#     return users.scalars().all()
+async def get_chat_rooms(
+        db_session: Session,
+        available_db_data: Optional[ChunkedIteratorResult] = select(ChatRoom),
+) -> List[ChatRoom]:
+    chat_rooms = await db_session.execute(available_db_data)
+    return chat_rooms.unique().scalars().all()
 #
 #
 # async def get_user(

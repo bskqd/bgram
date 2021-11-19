@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
+from sqlalchemy import select, true
 from sqlalchemy.orm import Session
 
 from accounts.crud import user as user_crud
@@ -21,7 +20,7 @@ router = APIRouter()
 async def registration_view(
         user: user_schemas.UserCreate,
         background_tasks: BackgroundTasks,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
+        db_session: Session = Depends(mixins_dependencies.db_session),
 ) -> str:
     user_data = user.dict()
     user_data['is_active'] = False
@@ -40,9 +39,9 @@ async def registration_view(
 @router.post('/login')
 async def login_view(
         login_data: authorization_schemas.LoginSchema,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
+        db_session: Session = Depends(mixins_dependencies.db_session)
 ) -> dict[str, str]:
-    get_user_query = select(User).where(User.email == login_data.email)
+    get_user_query = select(User).where(User.email == login_data.email, User.is_active == true())
     user = await db_session.execute(get_user_query)
     user = user.scalar()
     if user and user.check_password(login_data.password):
@@ -56,7 +55,7 @@ async def login_view(
 @router.post('/confirm_email')
 async def confirm_email_view(
         token: authorization_schemas.EmailConfirmationSchema,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
+        db_session: Session = Depends(mixins_dependencies.db_session)
 ) -> str:
     get_user_query = select(User).join(
         User.email_confirmation_tokens
@@ -64,7 +63,7 @@ async def confirm_email_view(
         EmailConfirmationToken.created_at >= datetime.now() - timedelta(settings.EMAIL_CONFIRMATION_TOKEN_VALID_HOURS)
     )
     user = await mixins_utils.get_object(get_user_query, EmailConfirmationToken, token.token, db_session, 'token')
-    await user_crud.update_user(user, db_session=db_session, is_active=True)
+    await user_crud.update_user(user, db_session, is_active=True)
     return 'Your email is successfully confirmed.'
 
 

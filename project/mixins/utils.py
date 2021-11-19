@@ -16,7 +16,7 @@ async def get_object(
         available_db_data: ChunkedIteratorResult,
         model_for_lookup: Type[Base],
         search_value: Any,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session),
+        db_session: Session,
         lookup_kwarg: Optional[str] = 'id'
 ) -> Any:
     """
@@ -29,7 +29,7 @@ async def get_object(
 
 async def create_object_in_database(
         object_to_create: Any,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
+        db_session: Session,
 ) -> Any:
     """
     Creates the given object_to_create in database (updates if it's already an existing object).
@@ -43,7 +43,7 @@ async def create_object_in_database(
 async def create_object_file(
         file_model: Any,
         file: UploadFile,
-        db_session: Optional[Session] = Depends(mixins_dependencies.db_session),
+        db_session: Session,
         **kwargs
 ) -> Any:
     """
