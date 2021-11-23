@@ -17,7 +17,7 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
     password = Column(String)
 
     email_confirmation_tokens = relationship('EmailConfirmationToken', back_populates='user')
-    photos = relationship('UserPhoto', back_populates='user', lazy='joined')
+    photos = relationship('UserPhoto', back_populates='user')
     chat_rooms = relationship(
         'ChatRoom', secondary=chatroom_members_association_table, back_populates='members'
     )

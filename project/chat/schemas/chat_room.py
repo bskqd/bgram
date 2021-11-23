@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class ChatRoomBase(BaseModel):
@@ -19,8 +19,22 @@ class ChatRoomUpdate(BaseModel):
     members: Optional[List[int]] = None
 
 
+class ChatRoomMemberSchema(BaseModel):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
 class ChatRoom(ChatRoomBase):
     id: int
     created_at: datetime
     modified_at: datetime
-    members: List[int]
+    members: List[ChatRoomMemberSchema]
+
+    class Config:
+        orm_mode = True
+
+    @validator('members')
+    def members_ids(cls, value):
+        return [member.id for member in value]

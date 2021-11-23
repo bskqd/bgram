@@ -19,8 +19,11 @@ class ChatRoomView(mixins_views.AbstractView):
     db_session: Session = Depends(mixins_dependencies.db_session)
 
     @router.post('/chat_rooms', response_model=chat_room_schemas.ChatRoom)
-    async def create_chat_room_view(self):
-        return await chat_room_crud.create_chat_room(self.db_session, self.available_db_data)
+    async def create_chat_room_view(self, chat_room_data: chat_room_schemas.ChatRoomCreate):
+        chat_room_data = chat_room_data.dict()
+        name = chat_room_data.pop('name')
+        members = chat_room_data.pop('members', [])
+        return await chat_room_crud.create_chat_room(name, members, self.db_session, **chat_room_data)
 
     @router.get('/chat_rooms', response_model=List[chat_room_schemas.ChatRoom])
     async def get_chat_rooms_view(self):
