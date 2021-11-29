@@ -30,11 +30,7 @@ class ChatRoom(ChatRoomBase):
     id: int
     created_at: datetime
     modified_at: datetime
-    members: List[ChatRoomMemberSchema]
+    members_count: int
 
     class Config:
         orm_mode = True
-
-    @validator('members')
-    def members_ids(cls, value):
-        return [member.id for member in value]

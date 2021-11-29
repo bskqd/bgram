@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 from chat.constants import ChatRoomMemberType
@@ -26,3 +27,7 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
     members = relationship(
         'User', secondary=chatroom_members_association_table, back_populates='chat_rooms'
     )
+
+    @hybrid_property
+    def members_count(self):
+        return len(self.members)

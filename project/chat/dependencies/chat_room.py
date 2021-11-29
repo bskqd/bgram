@@ -7,10 +7,8 @@ from chat.models import ChatRoom
 
 
 async def available_db_data(request: Request):
-    return select(ChatRoom).join(
-        User.chat_rooms
-    ).options(
-        joinedload(ChatRoom.members)
+    return select(ChatRoom).options(
+        joinedload(ChatRoom.members).load_only(User.id)
     ).where(
         User.id == request.state.user.id
     )
