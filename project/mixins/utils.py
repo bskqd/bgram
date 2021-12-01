@@ -3,13 +3,12 @@ import os
 import uuid
 from typing import Any, Optional, Type
 
-from fastapi import Depends, UploadFile
+from fastapi import UploadFile
 from sqlalchemy.engine import ChunkedIteratorResult
 from sqlalchemy.orm import Session
 
 from core.config import settings
 from database import Base
-from mixins import dependencies as mixins_dependencies
 
 
 async def get_object(

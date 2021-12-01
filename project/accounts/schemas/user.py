@@ -22,10 +22,9 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
-class User(UserBase):
+class User(UserBase, mixins_schemas.PhotosFieldSchemaABC):
     id: int
     is_active: bool
-    photos: List[mixins_schemas.FilesSchema]
     chat_rooms: List[int]
 
     class Config:

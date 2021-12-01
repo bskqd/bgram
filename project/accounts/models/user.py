@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 
 from chat.models import chatroom_members_association_table
 from core.config import settings
-from mixins.models import DateTimeABC, Photo, DescriptionABC, IsActiveABC
+from mixins.models import DateTimeABC, PhotoABC, DescriptionABC, IsActiveABC
 
 __all__ = ['User', 'UserPhoto']
 
@@ -27,12 +27,12 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
         return settings.PWD_CONTEXT.verify(plain_text_password, self.password)
 
 
-class UserPhoto(Photo):
+class UserPhoto(PhotoABC):
     __tablename__ = 'users_photos'
 
     user_id = Column(Integer, ForeignKey('users.id'))
 
-    user = relationship('User', back_populates='photos', lazy='joined', cascade='all, delete')
+    user = relationship('User', back_populates='photos', cascade='all, delete')
 
     @property
     def folder_to_save(self) -> str:

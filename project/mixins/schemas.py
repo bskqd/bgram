@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel, validator
 
@@ -16,3 +17,7 @@ class FilesSchema(BaseModel):
     @validator('file_path')
     def file_path_with_media_url(cls, value) -> str:
         return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}/{value}'
+
+
+class PhotosFieldSchemaABC(BaseModel):
+    photos: List[FilesSchema]

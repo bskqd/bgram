@@ -22,7 +22,7 @@ class IsActiveABC(Base):
     is_active = Column(Boolean, default=True)
 
 
-class Photo(DateTimeABC):
+class PhotoABC(DateTimeABC):
     __abstract__ = True
 
     id = Column(Integer, primary_key=True)
