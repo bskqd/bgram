@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.post('/registration')
 async def registration_view(
-        user: user_schemas.UserCreate,
+        user: user_schemas.UserCreateSchema,
         background_tasks: BackgroundTasks,
         db_session: Session = Depends(mixins_dependencies.db_session),
 ) -> str:

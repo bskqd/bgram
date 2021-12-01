@@ -19,5 +19,5 @@ class FilesSchema(BaseModel):
         return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}/{value}'
 
 
-class PhotosFieldSchemaABC(BaseModel):
+class PhotosFieldSchemaMixin(BaseModel):
     photos: List[FilesSchema]

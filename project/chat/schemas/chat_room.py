@@ -6,16 +6,16 @@ from pydantic import BaseModel
 from mixins import schemas as mixins_schemas
 
 
-class ChatRoomBase(BaseModel):
+class ChatRoomBaseSchema(BaseModel):
     name: str
     description: Optional[str] = ''
 
 
-class ChatRoomCreate(ChatRoomBase):
+class ChatRoomCreateSchema(ChatRoomBaseSchema):
     members: Optional[List[int]] = []
 
 
-class ChatRoomUpdate(BaseModel):
+class ChatRoomUpdateSchema(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     members: Optional[List[int]] = None
@@ -28,7 +28,7 @@ class ChatRoomMemberSchema(BaseModel):
         orm_mode = True
 
 
-class ChatRoom(ChatRoomBase, mixins_schemas.PhotosFieldSchemaABC):
+class ChatRoomSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
     id: int
     created_at: datetime
     modified_at: datetime
