@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from mixins import schemas as mixins_schemas
 
@@ -22,10 +22,21 @@ class UserUpdateSchema(BaseModel):
     is_active: Optional[bool] = None
 
 
-class UserSchema(UserBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
+class UserChatRoomsSchema(BaseModel):
     id: int
-    is_active: bool
-    chat_rooms: List[int]
 
     class Config:
         orm_mode = True
+
+
+class UserSchema(UserBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
+    id: int
+    is_active: bool
+    chat_rooms: List[UserChatRoomsSchema]
+
+    class Config:
+        orm_mode = True
+
+    @validator('chat_rooms')
+    def chat_rooms_ids(cls, value: List[UserChatRoomsSchema]) -> List[int]:
+        return [chat_room.id for chat_room in value]
