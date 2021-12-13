@@ -1,10 +1,7 @@
-from typing import Optional
-
-from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from accounts.models import User, EmailConfirmationToken
-from mixins import utils as mixins_utils, dependencies as mixins_dependencies
+from mixins import utils as mixins_utils
 
 
 async def create_email_confirmation_token(user: User, db_session: Session) -> EmailConfirmationToken:

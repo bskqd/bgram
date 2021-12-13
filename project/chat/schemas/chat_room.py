@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from mixins import schemas as mixins_schemas
 
@@ -28,7 +28,7 @@ class ChatRoomMemberSchema(BaseModel):
         orm_mode = True
 
 
-class ChatRoomSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
+class ChatRoomListSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
     id: int
     created_at: datetime
     modified_at: datetime
@@ -36,3 +36,14 @@ class ChatRoomSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
 
     class Config:
         orm_mode = True
+
+
+class ChatRoomDetailSchema(ChatRoomListSchema):
+    members: List[ChatRoomMemberSchema]
+
+    class Config:
+        orm_mode = True
+
+    @validator('members')
+    def members_ids(cls, value: List[ChatRoomMemberSchema]) -> List[int]:
+        return [member.id for member in value]

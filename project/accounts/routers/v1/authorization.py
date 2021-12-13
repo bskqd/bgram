@@ -68,8 +68,9 @@ async def confirm_email_view(
 
 
 @router.post('/refresh_token')
-async def refresh_token_view(token: authorization_schemas.RefreshTokenSchema) -> str:
+async def refresh_token_view(token: authorization_schemas.RefreshTokenSchema) -> dict[str, str]:
     user = await JWTAuthenticationServices.validate_token(token.refresh_token, [settings.JWT_REFRESH_TOKEN_TYPE])
     if user:
-        return await JWTAuthenticationServices.create_token(user.id, settings.JWT_ACCESS_TOKEN_TYPE)
+        access_token = await JWTAuthenticationServices.create_token(user.id, settings.JWT_ACCESS_TOKEN_TYPE)
+        return {'access_token': access_token}
     raise HTTPException(status_code=400, detail='Invalid refresh token')

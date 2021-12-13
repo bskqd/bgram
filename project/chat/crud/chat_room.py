@@ -1,5 +1,5 @@
 
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from sqlalchemy import select
 from sqlalchemy.engine import ChunkedIteratorResult
@@ -27,29 +27,26 @@ async def get_chat_rooms(
 ) -> List[ChatRoom]:
     chat_rooms = await db_session.execute(available_db_data)
     return chat_rooms.unique().scalars().all()
-#
-#
-# async def get_user(
-#         search_value: int,
-#         lookup_kwarg: Optional[str] = 'id',
-#         available_db_data: Optional[ChunkedIteratorResult] = select(User),
-#         db_session: Optional[Session] = Depends(mixins_dependencies.db_session)
-# ) -> User:
-#     return await mixins_utils.get_object(
-#         available_db_data, User, search_value, db_session=db_session, lookup_kwarg=lookup_kwarg
-#     )
-#
-#
-# async def update_user(
-#         user: User,
-#         db_session: Optional[Session] = Depends(mixins_dependencies.db_session),
-#         **data_for_update
-# ) -> User:
-#     for attr, value in data_for_update.items():
-#         setattr(user, attr, value)
-#     await mixins_utils.create_object_in_database(user, db_session)
-#     return user
-#
+
+
+async def get_chat_room(
+        search_value: Any,
+        db_session: Session,
+        lookup_kwarg: str = 'id',
+        available_db_data: ChunkedIteratorResult = select(ChatRoom)
+) -> ChatRoom:
+    return await mixins_utils.get_object(
+        available_db_data, ChatRoom, search_value, db_session=db_session, lookup_kwarg=lookup_kwarg
+    )
+
+
+async def update_chat_room(
+        chat_room: ChatRoom,
+        db_session: Session,
+        **data_for_update
+) -> ChatRoom:
+    return await mixins_utils.update_object_in_database(chat_room, db_session, **data_for_update)
+
 #
 # async def create_user_photo(
 #         user_id: int,

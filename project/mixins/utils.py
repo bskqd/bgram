@@ -1,7 +1,7 @@
 import asyncio
 import os
 import uuid
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 from fastapi import UploadFile
 from sqlalchemy.engine import ChunkedIteratorResult
@@ -16,27 +16,20 @@ async def get_object(
         model_for_lookup: Type[Base],
         search_value: Any,
         db_session: Session,
-        lookup_kwarg: Optional[str] = 'id'
+        lookup_kwarg: str = 'id'
 ) -> Any:
     """
     Must return object from available bd data using lookup_kwarg.
     """
-    get_object_statement = available_db_data.where(getattr(model_for_lookup, lookup_kwarg, None) == search_value)
-    obj = await db_session.execute(get_object_statement)
+    get_object_query = available_db_data.where(getattr(model_for_lookup, lookup_kwarg, None) == search_value)
+    obj = await db_session.execute(get_object_query)
     return obj.scalar()
 
 
-async def create_object_in_database(
-        object_to_create: Any,
-        db_session: Session,
-) -> Any:
-    """
-    Creates the given object_to_create in database (updates if it's already an existing object).
-    """
-    db_session.add(object_to_create)
-    await db_session.commit()
-    await db_session.refresh(object_to_create)
-    return object_to_create
+async def update_object_in_database(object_to_update: Base, db_session: Session, **data_for_update) -> Base:
+    for attr, value in data_for_update.items():
+        setattr(object_to_update, attr, value)
+    return await create_object_in_database(object_to_update, db_session)
 
 
 async def create_object_file(
@@ -71,3 +64,13 @@ def write_file(folder_to_save_file: str, filename: str, content_to_write: bytes)
     with open(full_path_to_save_file, 'wb') as file:
         file.write(content_to_write)
     return full_path_to_save_file.replace(settings.MEDIA_PATH, '', 1)
+
+
+async def create_object_in_database(object_to_create: Base, db_session: Session) -> Any:
+    """
+    Creates the given object_to_create in database (updates if it's already an existing object).
+    """
+    db_session.add(object_to_create)
+    await db_session.commit()
+    await db_session.refresh(object_to_create)
+    return object_to_create
