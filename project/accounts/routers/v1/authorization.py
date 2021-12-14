@@ -10,7 +10,8 @@ from accounts.schemas import user as user_schemas, authorization as authorizatio
 from accounts.services import authorization as authorization_services
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
-from mixins import dependencies as mixins_dependencies, utils as mixins_utils
+from mixins import dependencies as mixins_dependencies
+from mixins.services import crud as mixins_crud_services
 from notifications.background_tasks.email import send_email
 
 router = APIRouter()
@@ -62,7 +63,9 @@ async def confirm_email_view(
     ).where(
         EmailConfirmationToken.created_at >= datetime.now() - timedelta(settings.EMAIL_CONFIRMATION_TOKEN_VALID_HOURS)
     )
-    user = await mixins_utils.get_object(get_user_query, EmailConfirmationToken, token.token, db_session, 'token')
+    user = await mixins_crud_services.CRUDOperationsService(db_session).get_object(
+        get_user_query, EmailConfirmationToken, token.token, 'token'
+    )
     await user_crud.update_user(user, db_session, is_active=True)
     return 'Your email is successfully confirmed.'
 

@@ -2,9 +2,11 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 from fastapi_utils.cbv import cbv
-from sqlalchemy.engine import ChunkedIteratorResult
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import Select
 
+from accounts.models import User
 from chat.crud import chat_room as chat_room_crud
 from chat.dependencies import chat_room as chat_room_dependencies
 from chat.schemas import chat_room as chat_room_schemas
@@ -15,7 +17,7 @@ router = APIRouter()
 
 @cbv(router)
 class ChatRoomView(mixins_views.AbstractView):
-    available_db_data: ChunkedIteratorResult = Depends(chat_room_dependencies.available_db_data)
+    available_db_data: Select = Depends(chat_room_dependencies.available_db_data)
     db_session: Session = Depends(mixins_dependencies.db_session)
 
     @router.post('/chat_rooms', response_model=chat_room_schemas.ChatRoomDetailSchema)
@@ -40,6 +42,12 @@ class ChatRoomView(mixins_views.AbstractView):
         chat_room = await chat_room_crud.get_chat_room(
             chat_room_id, self.db_session, available_db_data=self.available_db_data
         )
+        chat_room_data: dict = chat_room_data.dict(exclude_unset=True)
+        members = chat_room_data.pop('members', None)
+        if members:
+            select_members_query = select(User).where(User.id.in_(members))
+            members = await self.db_session.execute(select_members_query)
+            members = members.scalars().all()
         return await chat_room_crud.update_chat_room(
-            chat_room, self.db_session, **chat_room_data.dict(exclude_unset=True)
+            chat_room, self.db_session, members=members, **chat_room_data
         )

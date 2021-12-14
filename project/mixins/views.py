@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from sqlalchemy.engine import ChunkedIteratorResult
+from sqlalchemy.sql import Select
 
 
 class AbstractView(ABC):
@@ -10,7 +10,7 @@ class AbstractView(ABC):
 
     @property
     @abstractmethod
-    def available_db_data(self) -> ChunkedIteratorResult:
+    def available_db_data(self) -> Select:
         """
         Must return queryset available for exact request.
         """
