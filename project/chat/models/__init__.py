@@ -1,1 +1,2 @@
-from chat.models.chat_room import *
+from chat.models.chat_rooms import *
+from chat.models.messages import *

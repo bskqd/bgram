@@ -10,9 +10,11 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
     Middleware for user authentication via JWT token.
     """
 
-    invalid_credentials_response = Response(status_code=401,
-                                            content='Could not validate credentials',
-                                            headers={'WWW-Authenticate': 'Bearer'})
+    invalid_credentials_response = Response(
+        status_code=401,
+        content='Could not validate credentials',
+        headers={'WWW-Authenticate': 'Bearer'}
+    )
 
     async def dispatch(self, request: Request, call_next):
         authorization_header = request.headers.get('Authorization')

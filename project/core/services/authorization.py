@@ -20,9 +20,11 @@ class JWTAuthenticationServices:
     Service class for user authentication.
     """
 
-    credentials_exception = HTTPException(status_code=401,
-                                          detail='Could not validate credentials',
-                                          headers={'WWW-Authenticate': 'Bearer'})
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail='Could not validate credentials',
+        headers={'WWW-Authenticate': 'Bearer'}
+    )
 
     @staticmethod
     async def create_token(user_id: int, token_type: str) -> str:

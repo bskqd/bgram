@@ -17,3 +17,4 @@ fastapi-mail~=1.0.1
 aiosmtplib~=1.1.6
 python-jose~=3.3.0
 aiofiles~=0.7.0
+websockets~=10.1
