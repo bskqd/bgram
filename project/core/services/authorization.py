@@ -37,11 +37,21 @@ class JWTAuthenticationServices:
         return jwt.encode(payload, settings.JWT_SECRET_KEY)
 
     @classmethod
+    async def validate_authorization_header(cls, header: str) -> User:
+        try:
+            token_type, token = header.split()
+        except ValueError:
+            raise cls.credentials_exception
+        if token_type != settings.JWT_TOKEN_TYPE_NAME:
+            raise cls.credentials_exception
+        return await cls.validate_token(token)
+
+    @classmethod
     async def validate_token(
             cls,
             token: str,
             valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES
-    ) -> Optional[User]:
+    ) -> User:
         try:
             payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         except JWTError:
@@ -49,7 +59,7 @@ class JWTAuthenticationServices:
         return await cls._validate_payload(payload, valid_token_types)
 
     @classmethod
-    async def _validate_payload(cls, payload: dict, valid_token_types: Iterable) -> Optional[User]:
+    async def _validate_payload(cls, payload: dict, valid_token_types: Iterable) -> User:
         user_id = payload.get('user_id')
         exp = payload.get('exp')
         token_type = payload.get('token_type')

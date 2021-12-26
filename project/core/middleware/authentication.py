@@ -1,7 +1,6 @@
 from fastapi import Request, HTTPException, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
 
 
@@ -20,13 +19,7 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
         authorization_header = request.headers.get('Authorization')
         if authorization_header:
             try:
-                token_type, token = authorization_header.split()
-            except ValueError:
-                return self.invalid_credentials_response
-            if token_type != settings.JWT_TOKEN_TYPE_NAME:
-                return self.invalid_credentials_response
-            try:
-                request.state.user = await JWTAuthenticationServices.validate_token(token)
+                request.state.user = await JWTAuthenticationServices.validate_authorization_header(authorization_header)
             except HTTPException as exception:
                 return Response(status_code=exception.status_code, content=exception.detail, headers=exception.headers)
         else:

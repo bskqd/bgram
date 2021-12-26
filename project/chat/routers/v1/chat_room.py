@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.crud import chat_room as chat_room_crud
+from chat.services import chat_room as chat_room_crud
 from chat.dependencies import chat_room as chat_room_dependencies
 from chat.schemas import chat_room as chat_room_schemas
 from mixins import views as mixins_views, dependencies as mixins_dependencies
@@ -17,7 +17,7 @@ router = APIRouter()
 
 @cbv(router)
 class ChatRoomView(mixins_views.AbstractView):
-    available_db_data: Select = Depends(chat_room_dependencies.available_db_data)
+    available_db_data: Select = Depends(chat_room_dependencies.get_available_chat_rooms_for_user)
     db_session: Session = Depends(mixins_dependencies.db_session)
 
     @router.post('/chat_rooms', response_model=chat_room_schemas.ChatRoomDetailSchema)

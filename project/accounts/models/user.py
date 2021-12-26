@@ -18,6 +18,7 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
 
     email_confirmation_tokens = relationship('EmailConfirmationToken', back_populates='user')
     photos = relationship('UserPhoto', back_populates='user')
+    messages = relationship('Message', back_populates='author')
     chat_rooms = relationship(
         'ChatRoom', secondary=chatroom_members_association_table, back_populates='members'
     )

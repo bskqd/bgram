@@ -21,7 +21,7 @@ class Message(DateTimeABC):
 class MessagePhoto(PhotoABC):
     __tablename__ = 'message_photos'
 
-    message_id = Column(Integer, ForeignKey('chat_rooms.id'))
+    message_id = Column(Integer, ForeignKey('messages.id'))
 
     message = relationship('Message', back_populates='photos', cascade='all, delete')
 
