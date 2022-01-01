@@ -4,14 +4,13 @@ from typing import List, Dict
 
 import aioredis
 from fastapi import WebSocket, APIRouter, WebSocketDisconnect, Depends
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from accounts.models import User
 from chat.dependencies.messages import get_request_user
-from chat.models import chatroom_members_association_table
+from chat.permissions.chat_rooms import UserChatRoomMessagingPermissionsService
 from core.config import settings
-from mixins import dependencies as mixins_dependencies
+from mixins import dependencies as mixins_dependencies, permissions as mixins_permissions
 
 router = APIRouter()
 
@@ -54,33 +53,25 @@ active_users_in_chat_rooms_redis_db = aioredis.from_url(settings.ACTIVE_USERS_IN
 async def messages_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
-        user: User = Depends(get_request_user),
+        request_user: User = Depends(get_request_user),
         db_session: Session = Depends(mixins_dependencies.db_session)
 ):
-    chat_room_exists_query = select(
-        chatroom_members_association_table.c.room_id
-    ).where(
-        chatroom_members_association_table.c.user_id == user.id,
-        chatroom_members_association_table.c.room_id == chat_room_id
-    ).exists().select()
-    chat_room_exists = await db_session.execute(chat_room_exists_query)
-    if not chat_room_exists.scalar():
-        await websocket.accept()
-        await websocket.send_json(
-            {
-                'success': False,
-                'detail': 'You are not allowed to messaging in this chat room'
-            }
-        )
-        await websocket.close()
-        return
-    websocket_connection = WebSocketConnection(websocket, user, chat_room_id)
+    permissions: mixins_permissions.PermissionsServiceABC = UserChatRoomMessagingPermissionsService(
+        request_user, chat_room_id, db_session
+    )
+    if not await permissions.check_permissions():
+        return await websocket.close()
+    websocket_connection = WebSocketConnection(websocket, request_user, chat_room_id)
     await chat_rooms_websocket_manager.connect(websocket_connection)
     try:
         while True:
             data = await websocket.receive_json()
+            if not await permissions.check_permissions():
+                return await chat_rooms_websocket_manager.disconnect(websocket_connection)
             await chat_rooms_websocket_manager.broadcast(
-                {f'User({user.id}) says': data},
+                {
+                    f'User({request_user.id}) says': data
+                },
                 chat_room_id
             )
     except WebSocketDisconnect:
