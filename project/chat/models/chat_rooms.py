@@ -29,6 +29,7 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
     members = relationship(
         'User', secondary=chatroom_members_association_table, back_populates='chat_rooms'
     )
+    messages = relationship('Message', back_populates='chat_room')
 
     @hybrid_property
     def members_count(self):

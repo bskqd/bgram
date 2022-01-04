@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from accounts.models import User
 from chat.dependencies.messages import get_request_user
 from chat.permissions.chat_rooms import UserChatRoomMessagingPermissionsService
+from chat.services import messages as messages_services
 from core.config import settings
 from mixins import dependencies as mixins_dependencies, permissions as mixins_permissions
 
@@ -65,12 +66,17 @@ async def messages_websocket_endpoint(
     await chat_rooms_websocket_manager.connect(websocket_connection)
     try:
         while True:
-            data = await websocket.receive_json()
+            # look for receiving bytes as well (https://stackoverflow.com/a/42246632/13394740 may help)
+            message_text = await websocket.receive_text()
             if not await permissions.check_permissions():
                 return await chat_rooms_websocket_manager.disconnect(websocket_connection)
+            new_message = await messages_services.MessagesCreatingService(db_session).create_message(
+                chat_room_id, message_text, request_user.id
+            )
             await chat_rooms_websocket_manager.broadcast(
                 {
-                    f'User({request_user.id}) says': data
+                    'user': request_user.id,
+                    'message': new_message.text,
                 },
                 chat_room_id
             )
