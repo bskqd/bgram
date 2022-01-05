@@ -64,22 +64,23 @@ async def messages_websocket_endpoint(
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user, chat_room_id)
     await chat_rooms_websocket_manager.connect(websocket_connection)
+    request_user_id = request_user.id
     try:
         while True:
             # look for receiving bytes as well (https://stackoverflow.com/a/42246632/13394740 may help)
-            message_text = await websocket.receive_text()
+            message_data: dict = await websocket.receive_json()
             if not await permissions.check_permissions():
                 return await chat_rooms_websocket_manager.disconnect(websocket_connection)
-            new_message = await messages_services.MessagesCreatingService(db_session).create_message(
-                chat_room_id, message_text, request_user.id
+            message = await messages_services.MessagesService(db_session).process_received_message(
+                message_data, chat_room_id, author_id=request_user_id
             )
-            await chat_rooms_websocket_manager.broadcast(
-                {
-                    'user': request_user.id,
-                    'message': new_message.text,
-                },
-                chat_room_id
-            )
+            response = {
+                'user': request_user_id,
+                'message_id': message.id,
+                'text': message.text,
+                'is_edited': message.is_edited,
+            } if not isinstance(message, int) else {'message_id': message, 'deleted': True}
+            await chat_rooms_websocket_manager.broadcast(response, chat_room_id)
     except WebSocketDisconnect:
         await chat_rooms_websocket_manager.disconnect(websocket_connection)
         await chat_rooms_websocket_manager.broadcast({'Client': 'has left the chat'}, chat_room_id)
