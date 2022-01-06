@@ -3,7 +3,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import func
 
-from chat.constants import ChatRoomMemberType
+from chat.constants import chat_rooms as chat_rooms_constants
 from database import Base
 from mixins.models import DateTimeABC, DescriptionABC, IsActiveABC, PhotoABC
 
@@ -15,7 +15,7 @@ chatroom_members_association_table = Table(
     Base.metadata,
     Column('room_id', Integer, ForeignKey('chat_rooms.id', ondelete='CASCADE'), index=True),
     Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), index=True),
-    Column('member_type', String, nullable=False, default=ChatRoomMemberType.MEMBER.value)
+    Column('member_type', String, nullable=False, default=chat_rooms_constants.ChatRoomMemberTypeEnum.MEMBER.value)
 )
 
 

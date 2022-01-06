@@ -4,9 +4,9 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from sqlalchemy import select, true
 from sqlalchemy.orm import Session
 
-from accounts.crud import user as user_crud
+from accounts.crud import users as user_crud
 from accounts.models import User, EmailConfirmationToken
-from accounts.schemas import user as user_schemas, authorization as authorization_schemas
+from accounts.schemas import users as user_schemas, authorization as authorization_schemas
 from accounts.services import authorization as authorization_services
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices

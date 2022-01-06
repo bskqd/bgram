@@ -3,7 +3,9 @@ from typing import Optional, Union
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
+from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
+from chat.schemas import messages as messages_schemas
 from mixins.services import crud as mixins_crud_services
 
 
@@ -11,29 +13,24 @@ class MessagesService:
     """
     Service class for creating messages.
     """
-    create_action = 'create'
-    update_action = 'update'
-    delete_action = 'delete'
-    allowed_actions = {create_action, update_action, delete_action}
 
     def __init__(self, db_session: Session):
         self.db_session = db_session
 
     async def process_received_message(
             self,
-            message_data: dict,
+            message_data: messages_schemas.SendMessageInChatSchema,
             chat_room_id: int,
             author_id: Optional[int] = None
     ) -> Union[Message, int]:
+        message_data = message_data.dict()
         message_id: Optional[int] = message_data.pop('message_id', None)
         action: str = message_data.pop('action')
-        if action not in self.allowed_actions:
-            raise Exception
-        if action == self.create_action:
+        if action == MessagesActionTypeEnum.CREATE.value:
             return await self.create_message(chat_room_id, message_data.pop('text'), author_id, **message_data)
-        elif action == self.update_action:
+        elif action == MessagesActionTypeEnum.UPDATE.value:
             return await self.update_message(message_id, **message_data)
-        elif action == self.delete_action:
+        elif action == MessagesActionTypeEnum.DELETE.value:
             return await self.delete_message(message_id)
 
     async def create_message(self, chat_room_id: int, text: str, author_id: Optional[int] = None, **kwargs) -> Message:

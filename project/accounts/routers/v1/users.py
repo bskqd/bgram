@@ -5,9 +5,9 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from accounts.crud import user as user_crud
-from accounts.dependencies import user as user_dependencies
-from accounts.schemas import user as user_schemas
+from accounts.crud import users as user_crud
+from accounts.dependencies import users as user_dependencies
+from accounts.schemas import users as user_schemas
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
 

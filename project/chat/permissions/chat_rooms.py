@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from accounts.models import User
+from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import chatroom_members_association_table, Message
-from chat.services.messages import MessagesService
 from mixins import permissions as mixins_permissions
 
 
@@ -33,9 +33,9 @@ class UserChatRoomMessagingPermissions(mixins_permissions.PermissionsRepository)
         return request_user_is_member_of_chat_room.scalar()
 
     async def check_message_action(self, action: str, message_id: Optional[int] = None) -> bool:
-        if action == MessagesService.create_action:
+        if action == MessagesActionTypeEnum.CREATE.value:
             return True
-        if action in {MessagesService.update_action, MessagesService.delete_action}:
+        if action in {MessagesActionTypeEnum.UPDATE.value, MessagesActionTypeEnum.DELETE.value}:
             message = await self.db_session.execute(
                 select(Message).options(joinedload(Message.author).load_only(User.id)).where(Message.id == message_id)
             )

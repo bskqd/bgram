@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from accounts.models import User, UserPhoto
-from accounts.utils.user import get_hashed_password
+from accounts.utils.users import get_hashed_password
 from mixins.services import crud as mixins_crud_services, files as mixins_files_services
 
 

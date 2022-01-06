@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class ChatRoomMemberType(str, Enum):
+class ChatRoomMemberTypeEnum(str, Enum):
     ADMIN = 'admin'
     MEMBER = 'member'

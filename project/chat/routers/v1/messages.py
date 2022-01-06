@@ -10,6 +10,7 @@ from accounts.models import User
 from chat.dependencies.messages import get_request_user
 from chat.models import Message
 from chat.permissions.chat_rooms import UserChatRoomMessagingPermissions
+from chat.schemas import messages as messages_schemas
 from chat.services import messages as messages_services
 from core.config import settings
 from mixins import dependencies as mixins_dependencies
@@ -39,12 +40,12 @@ class ChatRoomsWebSocketConnectionManager:
         if websocket_connection in chat_room_connections:
             chat_room_connections.remove(websocket_connection)
 
-    async def send_personal_message(self, websocket_connection: WebSocketConnection, message: dict):
-        await websocket_connection.websocket.send_json(message)
-
     async def broadcast(self, message: dict, chat_room_id: int):
         for connection in self.active_connections[chat_room_id]:
             await self.send_personal_message(connection, message)
+
+    async def send_personal_message(self, websocket_connection: WebSocketConnection, message: dict):
+        await websocket_connection.websocket.send_json(message)
 
 
 chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
@@ -67,12 +68,17 @@ async def messages_websocket_endpoint(
     try:
         while True:
             # look for receiving bytes as well (https://stackoverflow.com/a/42246632/13394740 may help)
-            message_data: dict = await websocket.receive_json()
+            message_data = await websocket.receive_json()
+            try:
+                message_data = messages_schemas.SendMessageInChatSchema(**message_data)
+            except Exception as exception:
+                await chat_rooms_websocket_manager.send_personal_message(
+                    websocket_connection, {'error': True, 'detail': str(exception)}
+                )
+                return await chat_rooms_websocket_manager.disconnect(websocket_connection)
             if (
                     not await permissions.check_permissions() or
-                    not await permissions.check_message_action(
-                        message_data.get('action'), message_data.get('message_id')
-                    )
+                    not await permissions.check_message_action(message_data.action, message_data.message_id)
             ):
                 return await chat_rooms_websocket_manager.disconnect(websocket_connection)
             message: Union[Message, int] = await messages_services.MessagesService(db_session).process_received_message(
