@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Union
 
 import aioredis
 from fastapi import WebSocket, APIRouter, WebSocketDisconnect, Depends
@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 
 from accounts.models import User
 from chat.dependencies.messages import get_request_user
-from chat.permissions.chat_rooms import UserChatRoomMessagingPermissionsService
+from chat.models import Message
+from chat.permissions.chat_rooms import UserChatRoomMessagingPermissions
 from chat.services import messages as messages_services
 from core.config import settings
-from mixins import dependencies as mixins_dependencies, permissions as mixins_permissions
+from mixins import dependencies as mixins_dependencies
 
 router = APIRouter()
 
@@ -57,9 +58,7 @@ async def messages_websocket_endpoint(
         request_user: User = Depends(get_request_user),
         db_session: Session = Depends(mixins_dependencies.db_session)
 ):
-    permissions: mixins_permissions.PermissionsServiceABC = UserChatRoomMessagingPermissionsService(
-        request_user, chat_room_id, db_session
-    )
+    permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_session)
     if not await permissions.check_permissions():
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user, chat_room_id)
@@ -69,9 +68,14 @@ async def messages_websocket_endpoint(
         while True:
             # look for receiving bytes as well (https://stackoverflow.com/a/42246632/13394740 may help)
             message_data: dict = await websocket.receive_json()
-            if not await permissions.check_permissions():
+            if (
+                    not await permissions.check_permissions() or
+                    not await permissions.check_message_action(
+                        message_data.get('action'), message_data.get('message_id')
+                    )
+            ):
                 return await chat_rooms_websocket_manager.disconnect(websocket_connection)
-            message = await messages_services.MessagesService(db_session).process_received_message(
+            message: Union[Message, int] = await messages_services.MessagesService(db_session).process_received_message(
                 message_data, chat_room_id, author_id=request_user_id
             )
             response = {
@@ -79,7 +83,7 @@ async def messages_websocket_endpoint(
                 'message_id': message.id,
                 'text': message.text,
                 'is_edited': message.is_edited,
-            } if not isinstance(message, int) else {'message_id': message, 'deleted': True}
+            } if isinstance(message, Message) else {'message_id': message, 'deleted': True}
             await chat_rooms_websocket_manager.broadcast(response, chat_room_id)
     except WebSocketDisconnect:
         await chat_rooms_websocket_manager.disconnect(websocket_connection)
