@@ -41,7 +41,5 @@ class Settings(BaseSettings):
     MEDIA_PATH: str = 'media/'
     MEDIA_URL: str = 'media'
 
-    ACTIVE_USERS_IN_CHAT_ROOMS_REDIS_DB_URL: str = 'redis://localhost'
-
 
 settings = Settings()

@@ -16,7 +16,7 @@ class CRUDOperationsService:
 
     async def get_object(
             self,
-            available_db_data: Select,
+            queryset: Select,
             model_for_lookup: Type[Base],
             search_value: Any,
             lookup_kwarg: str = 'id'
@@ -24,7 +24,7 @@ class CRUDOperationsService:
         """
         Must return object from available bd data using lookup_kwarg.
         """
-        get_object_query = available_db_data.where(getattr(model_for_lookup, lookup_kwarg, None) == search_value)
+        get_object_query = queryset.where(getattr(model_for_lookup, lookup_kwarg, None) == search_value)
         obj = await self.db_session.execute(get_object_query)
         return obj.scalar()
 

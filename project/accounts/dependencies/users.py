@@ -6,7 +6,7 @@ from accounts.models import User
 from chat.models import ChatRoom
 
 
-async def available_db_data(request: Request):
+async def get_users_queryset(request: Request):
     return select(
         User
     ).where(

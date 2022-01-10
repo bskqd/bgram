@@ -10,7 +10,7 @@ class AbstractView(ABC):
 
     @property
     @abstractmethod
-    def available_db_data(self) -> Select:
+    def queryset(self) -> Select:
         """
         Must return queryset available for exact request.
         """

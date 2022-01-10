@@ -15,3 +15,13 @@ class SendMessageInChatSchema(BaseModel):
         if value not in ALLOWED_MESSAGES_ACTION_TYPES:
             raise ValueError('Action is not allowed')
         return value
+
+
+class MessageInChatSchema(BaseModel):
+    id: int
+    is_edited: bool
+    text: str
+    author_id: int
+
+    class Config:
+        orm_mode = True

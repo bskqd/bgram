@@ -16,11 +16,8 @@ async def create_user(nickname: str, email: str, password: str, db_session: Sess
     return user
 
 
-async def get_users(
-        db_session: Session,
-        available_db_data: Select = select(User)
-) -> List[User]:
-    users = await db_session.execute(available_db_data)
+async def get_users(db_session: Session, queryset: Select = select(User)) -> List[User]:
+    users = await db_session.execute(queryset)
     return users.unique().scalars().all()
 
 
@@ -28,10 +25,10 @@ async def get_user(
         search_value: int,
         db_session: Session,
         lookup_kwarg: str = 'id',
-        available_db_data: Select = select(User)
+        queryset: Select = select(User)
 ) -> User:
     return await mixins_crud_services.CRUDOperationsService(db_session).get_object(
-        available_db_data, User, search_value, lookup_kwarg=lookup_kwarg
+        queryset, User, search_value, lookup_kwarg=lookup_kwarg
     )
 
 

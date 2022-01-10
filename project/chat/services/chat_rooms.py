@@ -6,12 +6,12 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import ChatRoom
-from mixins.services import crud as mixins_crud_services
+from mixins.services.crud import CRUDOperationsService
 
 
 async def create_chat_room(name: str, members_ids: List[int], db_session: Session, **kwargs) -> ChatRoom:
     chat_room = ChatRoom(name=name, **kwargs)
-    crud_operations_service = mixins_crud_services.CRUDOperationsService(db_session)
+    crud_operations_service = CRUDOperationsService(db_session)
     chat_room = await crud_operations_service.create_object_in_database(chat_room)
     chat_room = await crud_operations_service.get_object(
         select(ChatRoom).options(joinedload(ChatRoom.members).load_only(User.id)), ChatRoom, chat_room.id,
@@ -23,9 +23,9 @@ async def create_chat_room(name: str, members_ids: List[int], db_session: Sessio
 
 async def get_chat_rooms(
         db_session: Session,
-        available_db_data: Optional[Select] = select(ChatRoom),
+        queryset: Optional[Select] = select(ChatRoom),
 ) -> List[ChatRoom]:
-    chat_rooms = await db_session.execute(available_db_data)
+    chat_rooms = await db_session.execute(queryset)
     return chat_rooms.unique().scalars().all()
 
 
@@ -33,10 +33,10 @@ async def get_chat_room(
         search_value: Any,
         db_session: Session,
         lookup_kwarg: str = 'id',
-        available_db_data: Select = select(ChatRoom)
+        queryset: Select = select(ChatRoom)
 ) -> ChatRoom:
-    return await mixins_crud_services.CRUDOperationsService(db_session).get_object(
-        available_db_data, ChatRoom, search_value, lookup_kwarg=lookup_kwarg
+    return await CRUDOperationsService(db_session).get_object(
+        queryset, ChatRoom, search_value, lookup_kwarg=lookup_kwarg
     )
 
 
@@ -48,7 +48,7 @@ async def update_chat_room(
 ) -> ChatRoom:
     if members is not None:
         data_for_update['members'] = members
-    return await mixins_crud_services.CRUDOperationsService(db_session).update_object_in_database(
+    return await CRUDOperationsService(db_session).update_object_in_database(
         chat_room, **data_for_update
     )
 
