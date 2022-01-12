@@ -48,9 +48,7 @@ async def update_chat_room(
 ) -> ChatRoom:
     if members is not None:
         data_for_update['members'] = members
-    return await CRUDOperationsService(db_session).update_object_in_database(
-        chat_room, **data_for_update
-    )
+    return await CRUDOperationsService(db_session).update_object_in_database(chat_room, **data_for_update)
 
 #
 # async def create_user_photo(

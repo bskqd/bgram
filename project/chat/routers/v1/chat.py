@@ -6,6 +6,7 @@ from fastapi import WebSocket, APIRouter, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 
 from accounts.models import User
+from chat.constants.messages import MessagesActionTypeEnum
 from chat.dependencies.chat import get_request_user
 from chat.models import Message
 from chat.permissions.chat import UserChatRoomMessagingPermissions
@@ -86,7 +87,10 @@ async def chat_websocket_endpoint(
                 'message_id': message.id,
                 'text': message.text,
                 'is_edited': message.is_edited,
-            } if isinstance(message, Message) else {'message_id': message, 'deleted': True}
+            } if message_data.action != MessagesActionTypeEnum.DELETE.value else {
+                'message_id': message,
+                'deleted': True
+            }
             await chat_rooms_websocket_manager.broadcast(response, chat_room_id)
     except WebSocketDisconnect:
         await chat_rooms_websocket_manager.disconnect(websocket_connection)

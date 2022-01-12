@@ -12,15 +12,19 @@ class MessagesService:
     def __init__(self, db_session: Session):
         self.db_session = db_session
 
-    async def list_messages(self, chat_room_id: int, queryset: Select = select(Message)) -> Iterator[Message]:
-        queryset = queryset.where(Message.chat_room_id == chat_room_id)
+    async def list_messages(
+            self,
+            chat_room_id: Optional[int] = None,
+            queryset: Select = select(Message)
+    ) -> Iterator[Message]:
+        if chat_room_id:
+            queryset = queryset.where(Message.chat_room_id == chat_room_id)
         messages = await self.db_session.execute(queryset)
         return messages.scalars().all()
 
     async def create_message(self, chat_room_id: int, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
         message = Message(chat_room_id=chat_room_id, text=text, author_id=author_id, **kwargs)
-        crud_operations_service = CRUDOperationsService(self.db_session)
-        return await crud_operations_service.create_object_in_database(message)
+        return await CRUDOperationsService(self.db_session).create_object_in_database(message)
 
     async def update_message(self, message: Union[int, Message], **kwargs) -> Message:
         crud_service = CRUDOperationsService(self.db_session)
