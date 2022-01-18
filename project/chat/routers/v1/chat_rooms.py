@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.services import chat_rooms as chat_room_crud
 from chat.dependencies import chat_rooms as chat_room_dependencies
 from chat.schemas import chat_rooms as chat_room_schemas
+from chat.services import chat_rooms as chat_room_crud
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 
 router = APIRouter()

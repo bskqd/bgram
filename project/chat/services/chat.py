@@ -1,36 +1,40 @@
-from typing import Optional, Union
+from collections import defaultdict
+from datetime import datetime
+from typing import Dict, List
 
-from sqlalchemy.orm import Session
+from starlette.websockets import WebSocket
 
-from chat.constants.messages import MessagesActionTypeEnum
-from chat.models import Message
-from chat.schemas.messages import SendMessageInChatSchema
-from chat.services.messages import MessagesService
+from accounts.models import User
 
 
-class ChatService:
-    """
-    Service class for creating messages.
-    """
+class WebSocketConnection:
+    def __init__(self, websocket: WebSocket, user: User, chat_room_id: int, connected_at: datetime = datetime.now()):
+        self.websocket = websocket
+        self.user = user
+        self.chat_room_id = chat_room_id
+        self.connected_at = connected_at
 
-    def __init__(self, db_session: Session):
-        self.db_session = db_session
 
-    async def process_received_message(
-            self,
-            message_data: SendMessageInChatSchema,
-            chat_room_id: int,
-            author_id: Optional[int] = None
-    ) -> Union[Message, int]:
-        message_data = message_data.dict()
-        message_id: Optional[int] = message_data.pop('message_id', None)
-        action: str = message_data.pop('action')
-        messages_service_instance = MessagesService(db_session=self.db_session)
-        if action == MessagesActionTypeEnum.CREATE.value:
-            return await messages_service_instance.create_message(
-                chat_room_id, message_data.pop('text'), author_id, **message_data
-            )
-        elif action == MessagesActionTypeEnum.UPDATE.value:
-            return await messages_service_instance.update_message(message_id, **message_data)
-        elif action == MessagesActionTypeEnum.DELETE.value:
-            return await messages_service_instance.delete_message(message_id)
+class ChatRoomsWebSocketConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[int, List[WebSocketConnection]] = defaultdict(list)
+
+    async def connect(self, websocket_connection: WebSocketConnection):
+        await websocket_connection.websocket.accept()
+        self.active_connections[websocket_connection.chat_room_id].append(websocket_connection)
+
+    async def disconnect(self, websocket_connection: WebSocketConnection):
+        await websocket_connection.websocket.close()
+        chat_room_connections: List[WebSocketConnection] = self.active_connections[websocket_connection.chat_room_id]
+        if websocket_connection in chat_room_connections:
+            chat_room_connections.remove(websocket_connection)
+
+    async def broadcast(self, message: dict, chat_room_id: int):
+        for connection in self.active_connections[chat_room_id]:
+            await self.send_personal_message(connection, message)
+
+    async def send_personal_message(self, websocket_connection: WebSocketConnection, message: dict):
+        await websocket_connection.websocket.send_json(message)
+
+
+chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
