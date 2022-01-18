@@ -62,7 +62,7 @@ class MessagesView(mixins_views.AbstractView):
         return updated_message
 
     @router.delete('/chat_rooms/{chat_room_id}/messages/{message_id}')
-    async def update_message_view(self, request: Request, chat_room_id: int, message_id: int):
+    async def delete_message_view(self, request: Request, chat_room_id: int, message_id: int):
         await self.check_permissions(chat_room_id, request, message_id=message_id)
         await MessagesService(db_session=self.db_session).delete_message(message_id)
         await self._broadcast_message_to_chat_room(

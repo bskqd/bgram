@@ -43,8 +43,7 @@ async def login_view(
         db_session: Session = Depends(mixins_dependencies.db_session)
 ) -> dict[str, str]:
     get_user_query = select(User).where(User.email == login_data.email, User.is_active == true())
-    user = await db_session.execute(get_user_query)
-    user = user.scalar()
+    user = await db_session.scalar(get_user_query)
     if user and user.check_password(login_data.password):
         user_id = user.id
         access_token = await JWTAuthenticationServices.create_token(user_id, settings.JWT_ACCESS_TOKEN_TYPE)

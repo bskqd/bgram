@@ -19,8 +19,8 @@ class MessagesService:
     ) -> Iterator[Message]:
         if chat_room_id:
             queryset = queryset.where(Message.chat_room_id == chat_room_id)
-        messages = await self.db_session.execute(queryset)
-        return messages.scalars().all()
+        messages = await self.db_session.scalars(queryset)
+        return messages.all()
 
     async def create_message(self, chat_room_id: int, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
         message = Message(chat_room_id=chat_room_id, text=text, author_id=author_id, **kwargs)

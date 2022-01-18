@@ -17,8 +17,8 @@ async def create_user(nickname: str, email: str, password: str, db_session: Sess
 
 
 async def get_users(db_session: Session, queryset: Select = select(User)) -> List[User]:
-    users = await db_session.execute(queryset)
-    return users.unique().scalars().all()
+    users = await db_session.scalars(queryset)
+    return users.unique().all()
 
 
 async def get_user(

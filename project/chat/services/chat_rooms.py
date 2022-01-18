@@ -16,8 +16,8 @@ async def create_chat_room(name: str, members_ids: List[int], db_session: Sessio
     chat_room = await crud_operations_service.get_object(
         select(ChatRoom).options(joinedload(ChatRoom.members).load_only(User.id)), ChatRoom, chat_room.id,
     )
-    members = await db_session.execute(select(User).where(User.id.in_(members_ids)))
-    chat_room.members.extend(members.scalars().all())
+    members = await db_session.scalars(select(User).where(User.id.in_(members_ids)))
+    chat_room.members.extend(members.all())
     return chat_room
 
 
@@ -25,8 +25,8 @@ async def get_chat_rooms(
         db_session: Session,
         queryset: Optional[Select] = select(ChatRoom),
 ) -> List[ChatRoom]:
-    chat_rooms = await db_session.execute(queryset)
-    return chat_rooms.unique().scalars().all()
+    chat_rooms = await db_session.scalars(queryset)
+    return chat_rooms.unique().all()
 
 
 async def get_chat_room(

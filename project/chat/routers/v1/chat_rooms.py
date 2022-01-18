@@ -46,8 +46,8 @@ class ChatRoomView(mixins_views.AbstractView):
         members = chat_room_data.pop('members', None)
         if members:
             select_members_query = select(User).where(User.id.in_(members))
-            members = await self.db_session.execute(select_members_query)
-            members = members.scalars().all()
+            members = await self.db_session.scalars(select_members_query)
+            members = members.all()
         return await chat_room_crud.update_chat_room(
             chat_room, self.db_session, members=members, **chat_room_data
         )

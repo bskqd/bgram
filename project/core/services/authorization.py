@@ -109,8 +109,7 @@ class JWTAuthenticationServices:
     async def _get_user(user_id: int) -> User:
         async with (db_session := DatabaseSession()):
             get_user_query = select(User).where(User.id == user_id, User.is_active == true())
-            user = await db_session.execute(get_user_query)
-            user = user.scalar()
+            user = await db_session.scalar(get_user_query)
             if user:
                 return user
             raise HTTPException(

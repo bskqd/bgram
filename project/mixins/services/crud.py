@@ -25,8 +25,7 @@ class CRUDOperationsService:
         Must return object from available bd data using lookup_kwarg.
         """
         get_object_query = queryset.where(getattr(model_for_lookup, lookup_kwarg, None) == search_value)
-        obj = await self.db_session.execute(get_object_query)
-        return obj.scalar()
+        return await self.db_session.scalar(get_object_query)
 
     async def update_object_in_database(self, object_to_update: Base, **data_for_update) -> Base:
         """

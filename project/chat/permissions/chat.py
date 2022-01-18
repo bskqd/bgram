@@ -41,19 +41,19 @@ class UserChatRoomMessagingPermissions(mixins_permissions.PermissionsRepository)
             chatroom_members_association_table.c.user_id == self.request_user.id,
             chatroom_members_association_table.c.room_id == self.chat_room_id
         ).exists().select()
-        request_user_is_member_of_chat_room = await self.db_session.execute(request_user_is_member_of_chat_room_query)
-        if not request_user_is_member_of_chat_room.scalar():
+        request_user_is_member_of_chat_room = await self.db_session.scalar(request_user_is_member_of_chat_room_query)
+        if not request_user_is_member_of_chat_room:
             raise self.permission_denied_exception
 
     async def check_message_author(self):
         if not self.message_id:
             raise self.permission_denied_exception
-        request_user_is_message_author = await self.db_session.execute(
+        request_user_is_message_author = await self.db_session.scalar(
             select(Message).options(
                 joinedload(Message.author).load_only(User.id)
             ).where(
                 Message.id == self.message_id
             ).exists().select()
         )
-        if not request_user_is_message_author.scalar():
+        if not request_user_is_message_author:
             raise self.permission_denied_exception
