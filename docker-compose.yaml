@@ -1,0 +1,15 @@
+services:
+  bgram:
+    build: .
+    restart: "on-failure"
+    env_file: project/.env
+    ports:
+      - "8000:80"
+    networks:
+      - bgram
+
+volumes:
+  bgram-db:
+
+networks:
+  bgram:
