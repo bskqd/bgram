@@ -1,0 +1,12 @@
+name: Run compose
+on: [push]
+jobs:
+  run-compose:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+      uses: actions/checkout@v1
+      - name: Start containers
+      run: docker-compose version
