@@ -80,12 +80,12 @@ class JWTAuthenticationServices:
     async def _check_token_expiration(token_type: str, token_expired_at: datetime):
         current_datetime = datetime.now()
         access_toke_is_expired = (
-                token_type == settings.JWT_ACCESS_TOKEN_TYPE and
-                token_expired_at < current_datetime - timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+            token_type == settings.JWT_ACCESS_TOKEN_TYPE and
+            token_expired_at < current_datetime - timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         refresh_token_is_expired = (
-                token_type == settings.JWT_REFRESH_TOKEN_TYPE and
-                token_expired_at < current_datetime - timedelta(minutes=settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
+            token_type == settings.JWT_REFRESH_TOKEN_TYPE and
+            token_expired_at < current_datetime - timedelta(minutes=settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
         )
         if access_toke_is_expired or refresh_token_is_expired:
             raise HTTPException(
