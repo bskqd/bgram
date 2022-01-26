@@ -8,8 +8,5 @@ services:
     networks:
       - bgram
 
-volumes:
-  bgram-db:
-
 networks:
   bgram:
