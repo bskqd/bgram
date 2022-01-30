@@ -5,12 +5,13 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
+import chat.dependencies.messages
 from accounts.models import User
-from chat.dependencies import messages as messages_dependencies, chat as chat_dependencies
-from chat.permissions.chat import UserChatRoomMessagingPermissions
+from chat.dependencies import messages as messages_dependencies
+from chat.permissions.messages import UserChatRoomMessagingPermissions
 from chat.schemas.messages import ListMessagesSchema, CreateMessageSchema, UpdateMessageSchema
-from chat.services.chat import WebSocketConnection, MessagesService
-from chat.services.chat import chat_rooms_websocket_manager
+from chat.services.messages import WebSocketConnection, MessagesService
+from chat.services.messages import chat_rooms_websocket_manager
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 
 router = APIRouter()
@@ -20,7 +21,7 @@ router = APIRouter()
 async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
-        request_user: User = Depends(chat_dependencies.get_request_user),
+        request_user: User = Depends(chat.dependencies.messages.get_request_user),
         db_session: Session = Depends(mixins_dependencies.db_session)
 ):
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_session)
