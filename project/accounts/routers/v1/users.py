@@ -5,9 +5,9 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
-from accounts.crud import users as user_crud
 from accounts.dependencies import users as user_dependencies
 from accounts.schemas import users as user_schemas
+from accounts.services.users import UserService
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
 
@@ -21,18 +21,20 @@ class UserView(mixins_views.AbstractView):
 
     @router.get('/users', response_model=List[user_schemas.UserSchema])
     async def list_users_view(self):
-        return await user_crud.get_users(self.db_session, self.queryset)
+        return await UserService(self.db_session).list_users(self.queryset)
 
     @router.get('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def retrieve_user_view(self, user_id: int):
-        return await user_crud.get_user(user_id, self.db_session, queryset=self.queryset)
+        return await UserService(self.db_session).retrieve_user(user_id, queryset=self.queryset)
 
     @router.patch('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def update_user_view(self, user_id: int, user_data: user_schemas.UserUpdateSchema):
-        user = await user_crud.get_user(user_id, queryset=self.queryset, db_session=self.db_session)
-        return await user_crud.update_user(user, self.db_session, **user_data.dict(exclude_unset=True))
+        user_service = UserService(self.db_session)
+        user = await user_service.retrieve_user(user_id, queryset=self.queryset)
+        return await user_service.update_user(user, **user_data.dict(exclude_unset=True))
 
     @router.post('/users/{user_id}/upload_file', response_model=user_schemas.UserSchema)
     async def upload_user_photo_view(self, user_id: int, file: UploadFile = File(...)):
-        await user_crud.create_user_photo(user_id, file, db_session=self.db_session)
-        return await user_crud.get_user(user_id, self.db_session, queryset=self.queryset)
+        user_service = UserService(self.db_session)
+        await user_service.create_user_photo(user_id, file)
+        return await user_service.retrieve_user(user_id, queryset=self.queryset)
