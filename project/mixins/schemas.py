@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, validator
 
@@ -21,3 +21,10 @@ class FilesSchema(BaseModel):
 
 class PhotosFieldSchemaMixin(BaseModel):
     photos: List[FilesSchema]
+
+
+class PaginatedResponseSchemaMixin(BaseModel):
+    total: int
+    count: int
+    next: Optional[str]
+    previous: Optional[str]

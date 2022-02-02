@@ -9,7 +9,7 @@ from chat.models import chatroom_members_association_table, Message
 from mixins import permissions as mixins_permissions
 
 
-class UserChatRoomMessagingPermissions(mixins_permissions.PermissionsRepository):
+class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
     """
     Permissions service class for messaging in chat rooms for user.
     """

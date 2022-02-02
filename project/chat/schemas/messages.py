@@ -1,4 +1,8 @@
+from typing import List
+
 from pydantic import BaseModel
+
+from mixins.schemas import PaginatedResponseSchemaMixin
 
 
 class CreateMessageSchema(BaseModel):
@@ -17,3 +21,7 @@ class ListMessagesSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class PaginatedListMessagesSchema(PaginatedResponseSchemaMixin):
+    data: List[ListMessagesSchema]

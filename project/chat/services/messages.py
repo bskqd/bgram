@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Optional, Iterator, Union
+from typing import Dict, List, Optional, Union
 
 from fastapi import WebSocket
 from sqlalchemy import select, delete
@@ -62,7 +62,7 @@ class MessagesService:
             self,
             chat_room_id: Optional[int] = None,
             queryset: Select = select(Message)
-    ) -> Iterator[Message]:
+    ) -> List[Message]:
         if chat_room_id:
             queryset = queryset.where(Message.chat_room_id == chat_room_id)
         messages = await self.db_session.scalars(queryset)

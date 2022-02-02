@@ -1,5 +1,6 @@
-from typing import List, Optional
-
+from copy import copy
+from typing import Optional, Iterable, List
+from urllib.parse import urljoin, urlparse
 from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
@@ -9,10 +10,13 @@ import chat.dependencies.messages
 from accounts.models import User
 from chat.dependencies import messages as messages_dependencies
 from chat.permissions.messages import UserChatRoomMessagingPermissions
-from chat.schemas.messages import ListMessagesSchema, CreateMessageSchema, UpdateMessageSchema
+from chat.schemas.messages import (ListMessagesSchema, CreateMessageSchema, UpdateMessageSchema,
+                                   PaginatedListMessagesSchema)
 from chat.services.messages import WebSocketConnection, MessagesService
 from chat.services.messages import chat_rooms_websocket_manager
+from database import Base
 from mixins import views as mixins_views, dependencies as mixins_dependencies
+from mixins.permissions import UserIsAuthenticatedPermission
 
 router = APIRouter()
 
@@ -46,6 +50,7 @@ class MessagesView(mixins_views.AbstractView):
     request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
 
     async def check_permissions(self, chat_room_id: int, request: Request, message_id: Optional[int] = None):
+        await UserIsAuthenticatedPermission(self.request_user).check_permissions()
         await UserChatRoomMessagingPermissions(
             request_user=self.request_user,
             chat_room_id=chat_room_id,
@@ -53,6 +58,30 @@ class MessagesView(mixins_views.AbstractView):
             request=request,
             message_id=message_id,
         ).check_permissions()
+
+    async def paginate(self, queryset: List[Base]) -> dict:
+        total = len(queryset)
+        query_params = self.request.query_params
+        page_size: int = int(query_params.get('page_size', 20))
+        page: int = int(query_params.get('page', 1))
+        start = page_size * (page - 1)
+        end = page_size * page
+        queryset = queryset[start:end]
+        url = str(self.request.url)
+        next_page = None if end >= total else url.replace(f'page={page}', f'page_size={page + 1}')
+        previous_page = url.replace(f'page={page}', f'page_size={page - 1}') if page > 1 else None
+        return {
+            'data': queryset,
+            'total': total,
+            'count': len(queryset),
+            'next': next_page,
+            'previous': previous_page,
+        }
+
+    @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
+    async def list_messages_view(self, request: Request, chat_room_id: int):
+        await self.check_permissions(chat_room_id, request)
+        return await self.paginate(await MessagesService(self.db_session).list_messages(chat_room_id, self.queryset))
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
     async def create_message_view(self, request: Request, chat_room_id: int, message_data: CreateMessageSchema):
@@ -80,8 +109,3 @@ class MessagesView(mixins_views.AbstractView):
         await self.check_permissions(chat_room_id, request, message_id=message_id)
         await MessagesService(db_session=self.db_session, chat_room_id=chat_room_id).delete_message(message_id)
         return {'detail': 'success'}
-
-    @router.get('/chat_rooms/{chat_room_id}/messages', response_model=List[ListMessagesSchema])
-    async def list_messages_view(self, request: Request, chat_room_id: int):
-        await self.check_permissions(chat_room_id, request)
-        return await MessagesService(self.db_session).list_messages(chat_room_id, self.queryset)

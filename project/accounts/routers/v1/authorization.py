@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from accounts.models import User, EmailConfirmationToken
 from accounts.schemas import users as user_schemas, authorization as authorization_schemas
 from accounts.services.users import UserService
-from accounts.utils.authorization import create_email_confirmation_token
+from accounts.services.authorization import create_email_confirmation_token
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
 from mixins import dependencies as mixins_dependencies
