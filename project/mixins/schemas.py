@@ -24,7 +24,9 @@ class PhotosFieldSchemaMixin(BaseModel):
 
 
 class PaginatedResponseSchemaMixin(BaseModel):
-    total: int
     count: int
+    total_pages: int
+    current_page: int
+    page_size: int
     next: Optional[str]
     previous: Optional[str]
