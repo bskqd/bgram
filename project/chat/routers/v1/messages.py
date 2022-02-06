@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPExce
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import Select
 
 import chat.dependencies.messages
 from accounts.models import User
