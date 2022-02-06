@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, validator
 
 from mixins import schemas as mixins_schemas
+from mixins.schemas import PaginatedResponseSchemaMixin
 
 
 class ChatRoomBaseSchema(BaseModel):
@@ -28,7 +29,7 @@ class ChatRoomMemberSchema(BaseModel):
         orm_mode = True
 
 
-class ChatRoomListSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
+class ChatRoomsListSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
     id: int
     created_at: datetime
     modified_at: datetime
@@ -38,7 +39,11 @@ class ChatRoomListSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMix
         orm_mode = True
 
 
-class ChatRoomDetailSchema(ChatRoomListSchema):
+class PaginatedChatRoomsListSchema(PaginatedResponseSchemaMixin):
+    data: List[ChatRoomsListSchema]
+
+
+class ChatRoomDetailSchema(ChatRoomsListSchema):
     members: List[ChatRoomMemberSchema]
 
     class Config:

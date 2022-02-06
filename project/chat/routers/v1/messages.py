@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
@@ -46,30 +46,29 @@ async def chat_websocket_endpoint(
 class MessagesView(mixins_views.AbstractView):
     queryset: Select = Depends(messages_dependencies.get_messages_queryset)
     db_session: Session = Depends(mixins_dependencies.db_session)
-    request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
-    paginator_class = DefaultPaginationClass
+    pagination_class = DefaultPaginationClass
 
-    async def check_permissions(self, chat_room_id: int, request: Request, message_id: Optional[int] = None):
+    async def check_permissions(self, chat_room_id: int, message_id: Optional[int] = None):
         await UserIsAuthenticatedPermission(self.request_user).check_permissions()
         await UserChatRoomMessagingPermissions(
             request_user=self.request_user,
             chat_room_id=chat_room_id,
             db_session=self.db_session,
-            request=request,
+            request=self.request,
             message_id=message_id,
         ).check_permissions()
 
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
-        await self.check_permissions(chat_room_id, self.request)
-        return self.paginator_class(self.request).paginate(
+        await self.check_permissions(chat_room_id)
+        return self.get_paginated_response(
             await MessagesService(self.db_session).list_messages(chat_room_id, self.queryset)
         )
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
     async def create_message_view(self, chat_room_id: int, message_data: CreateMessageSchema):
         request_user_id = self.request_user.id
-        await self.check_permissions(chat_room_id, self.request)
+        await self.check_permissions(chat_room_id)
         return await MessagesService(db_session=self.db_session).create_message(
             chat_room_id, message_data.text, request_user_id,
         )
@@ -81,13 +80,13 @@ class MessagesView(mixins_views.AbstractView):
             message_id: int,
             message_data: UpdateMessageSchema
     ):
-        await self.check_permissions(chat_room_id, self.request, message_id=message_id)
+        await self.check_permissions(chat_room_id, message_id=message_id)
         return await MessagesService(db_session=self.db_session, chat_room_id=chat_room_id).update_message(
             message_id, **message_data.dict(exclude_unset=True)
         )
 
     @router.delete('/chat_rooms/{chat_room_id}/messages/{message_id}')
     async def delete_message_view(self, chat_room_id: int, message_id: int):
-        await self.check_permissions(chat_room_id, self.request, message_id=message_id)
+        await self.check_permissions(chat_room_id, message_id=message_id)
         await MessagesService(db_session=self.db_session, chat_room_id=chat_room_id).delete_message(message_id)
         return {'detail': 'success'}
