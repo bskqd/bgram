@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.models import ChatRoom
+from chat.models import ChatRoom, chatroom_members_association_table
 from chat.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
                                      ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
@@ -26,11 +26,13 @@ class ChatRoomView(mixins_views.AbstractView):
 
     def get_db_query(self) -> Select:
         return select(
-            ChatRoom, ChatRoom.members_count
+            ChatRoom
+        ).join(
+            chatroom_members_association_table
         ).options(
             joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
         ).where(
-            User.id == self.request_user.id
+            chatroom_members_association_table.c.user_id == self.request_user.id
         )
 
     @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)

@@ -9,7 +9,7 @@ from sqlalchemy.sql import Select
 from accounts.models import User
 from accounts.schemas import users as user_schemas
 from accounts.services.users import UserService
-from chat.models import ChatRoom
+from chat.models import ChatRoom, chatroom_members_association_table
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
 
@@ -23,11 +23,12 @@ class UserView(mixins_views.AbstractView):
     def get_db_query(self) -> Select:
         return select(
             User
-        ).where(
-            User.id == self.request_user.id
+        ).join(
+            chatroom_members_association_table
         ).options(
-            joinedload(User.chat_rooms).load_only(ChatRoom.id),
-            joinedload(User.photos)
+            joinedload(User.chat_rooms).load_only(ChatRoom.id), joinedload(User.photos)
+        ).where(
+            chatroom_members_association_table.c.user_id == self.request_user.id
         )
 
     @router.get('/users', response_model=List[user_schemas.UserSchema])

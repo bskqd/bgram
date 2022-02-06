@@ -1,7 +1,5 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, select
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.functions import func
 
 from chat.constants import chat_rooms as chat_rooms_constants
 from database import Base
@@ -31,21 +29,9 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
     )
     messages = relationship('Message', back_populates='chat_room')
 
-    @hybrid_property
+    @property
     def members_count(self):
         return len(self.members)
-
-    @members_count.expression
-    def members_count(self):
-        return select(
-            func.count(chatroom_members_association_table.c.room_id)
-        ).join(
-            ChatRoom, chatroom_members_association_table.c.room_id == ChatRoom.id
-        ).where(
-            chatroom_members_association_table.c.room_id == self.id
-        ).group_by(
-            chatroom_members_association_table.c.room_id
-        ).subquery()
 
 
 class ChatRoomPhoto(PhotoABC):
