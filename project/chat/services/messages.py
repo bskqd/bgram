@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from fastapi import WebSocket
 from sqlalchemy import select, delete
@@ -77,12 +77,10 @@ class MessagesService:
             )
         return created_message
 
-    async def update_message(self, message: Union[int, Message], **kwargs) -> Message:
-        crud_service = CRUDOperationsService(self.db_session)
-        if isinstance(message, int):
-            message: Message = await crud_service.get_object(select(Message), Message, message)
-        kwargs['is_edited'] = True
-        updated_message = await crud_service.update_object_in_database(message, **kwargs)
+    async def update_message(self, message: Message, **kwargs) -> Message:
+        if not message.is_edited:
+            kwargs['is_edited'] = True
+        updated_message = await CRUDOperationsService(self.db_session).update_object_in_database(message, **kwargs)
         if self.broadcast_action_to_chat_room:
             await self._broadcast_action_to_chat_room(
                 self.chat_room_id, MessagesActionTypeEnum.UPDATED.value,

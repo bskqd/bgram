@@ -17,6 +17,7 @@ from chat.services.messages import chat_rooms_websocket_manager
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 from mixins.pagination import DefaultPaginationClass
 from mixins.permissions import UserIsAuthenticatedPermission
+from mixins.services.crud import CRUDOperationsService
 
 router = APIRouter()
 
@@ -47,7 +48,6 @@ async def chat_websocket_endpoint(
 class MessagesView(mixins_views.AbstractView):
     db_session: Session = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
-    db_query = select(Message)
 
     async def check_permissions(self, chat_room_id: int, message_id: Optional[int] = None):
         await UserIsAuthenticatedPermission(self.request_user).check_permissions()
@@ -60,7 +60,7 @@ class MessagesView(mixins_views.AbstractView):
         ).check_permissions()
 
     def get_db_query(self, **kwargs) -> Select:
-        return select(Message).where(Message.chat_room_id == kwargs.get('chat_room_id'))
+        return select(Message).where(Message.chat_room_id == kwargs.get('chat_room_id')).order_by(-Message.id)
 
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
@@ -87,8 +87,11 @@ class MessagesView(mixins_views.AbstractView):
             message_data: UpdateMessageSchema
     ):
         await self.check_permissions(chat_room_id, message_id=message_id)
+        message = await CRUDOperationsService(self.db_session).get_object(
+            self.get_db_query(chat_room_id=chat_room_id), Message, message_id,
+        )
         return await MessagesService(db_session=self.db_session, chat_room_id=chat_room_id).update_message(
-            message_id, **message_data.dict(exclude_unset=True)
+            message, **message_data.dict(exclude_unset=True)
         )
 
     @router.delete('/chat_rooms/{chat_room_id}/messages/{message_id}')
