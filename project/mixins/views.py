@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import List, Optional
 
 from fastapi import Request, Depends, HTTPException
@@ -15,18 +15,16 @@ class AbstractView(ABC):
     """
     request: Request = Depends(mixins_dependencies.get_request)
     request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+    db_query = None
     pagination_class = None
 
-    @property
-    @abstractmethod
-    def queryset(self) -> Select:
-        """
-        Must return queryset available for exact request.
-        """
-        pass
+    def get_db_query(self) -> Select:
+        if hasattr(self, 'db_query'):
+            return self.db_query
+        raise HTTPException(status_code=400, detail=f'Default db query for {self.__class__} is not specified')
 
     def get_paginated_response(self, queryset: List[Base], **kwargs) -> dict:
         pagintion_class = self.pagination_class
-        if not pagintion_class:
-            raise HTTPException(status_code=400, detail=f'Pagination class for {self.__class__} is not specified')
-        return pagintion_class(self.request, **kwargs).paginate(queryset)
+        if pagintion_class:
+            return pagintion_class(self.request, **kwargs).paginate(queryset)
+        raise HTTPException(status_code=400, detail=f'Pagination class for {self.__class__} is not specified')

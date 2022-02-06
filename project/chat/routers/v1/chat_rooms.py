@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.dependencies import chat_rooms as chat_room_dependencies
+from chat.models import ChatRoom
 from chat.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
                                      ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
@@ -18,24 +18,32 @@ router = APIRouter()
 
 @cbv(router)
 class ChatRoomView(mixins_views.AbstractView):
-    queryset: Select = Depends(chat_room_dependencies.get_available_chat_rooms_for_user)
     db_session: Session = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
 
     async def check_permissions(self):
         await UserIsAuthenticatedPermission(self.request_user).check_permissions()
 
+    def get_db_query(self) -> Select:
+        return select(
+            ChatRoom, ChatRoom.members_count
+        ).options(
+            joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
+        ).where(
+            User.id == self.request_user.id
+        )
+
     @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)
     async def list_chat_rooms_view(self):
         await self.check_permissions()
         return self.get_paginated_response(
-            await ChatRoomService(self.db_session).list_chat_rooms(queryset=self.queryset)
+            await ChatRoomService(self.db_session).list_chat_rooms(db_query=self.get_db_query())
         )
 
     @router.get('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
     async def retrieve_chat_room_view(self, chat_room_id: int):
         await self.check_permissions()
-        return await ChatRoomService(self.db_session).retrieve_chat_room(chat_room_id, queryset=self.queryset)
+        return await ChatRoomService(self.db_session).retrieve_chat_room(chat_room_id, db_query=self.get_db_query())
 
     @router.post('/chat_rooms', response_model=ChatRoomDetailSchema)
     async def create_chat_room_view(self, chat_room_data: ChatRoomCreateSchema):
@@ -49,7 +57,7 @@ class ChatRoomView(mixins_views.AbstractView):
     async def update_chat_room_view(self, chat_room_id: int, chat_room_data: ChatRoomUpdateSchema):
         await self.check_permissions()
         chat_room_service = ChatRoomService(self.db_session)
-        chat_room = await chat_room_service.retrieve_chat_room(chat_room_id, queryset=self.queryset)
+        chat_room = await chat_room_service.retrieve_chat_room(chat_room_id, db_query=self.get_db_query())
         chat_room_data: dict = chat_room_data.dict(exclude_unset=True)
         members = chat_room_data.pop('members', None)
         if members:

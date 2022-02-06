@@ -28,14 +28,14 @@ class ChatRoomService:
             self,
             search_value: Any,
             lookup_kwarg: str = 'id',
-            queryset: Select = select(ChatRoom)
+            db_query: Select = select(ChatRoom)
     ) -> ChatRoom:
         return await CRUDOperationsService(self.db_session).get_object(
-            queryset, ChatRoom, search_value, lookup_kwarg=lookup_kwarg
+            db_query, ChatRoom, search_value, lookup_kwarg=lookup_kwarg
         )
 
-    async def list_chat_rooms(self, queryset: Optional[Select] = select(ChatRoom)) -> List[ChatRoom]:
-        chat_rooms = await self.db_session.scalars(queryset)
+    async def list_chat_rooms(self, db_query: Optional[Select] = select(ChatRoom)) -> List[ChatRoom]:
+        chat_rooms = await self.db_session.scalars(db_query)
         return chat_rooms.unique().all()
 
     async def update_chat_room(

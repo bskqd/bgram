@@ -19,13 +19,13 @@ class UserService:
         await mixins_crud_services.CRUDOperationsService(self.db_session).create_object_in_database(user)
         return user
 
-    async def list_users(self, queryset: Select = select(User)) -> List[User]:
-        users = await self.db_session.scalars(queryset)
+    async def list_users(self, db_query: Select = select(User)) -> List[User]:
+        users = await self.db_session.scalars(db_query)
         return users.unique().all()
 
-    async def retrieve_user(self, search_value: int, lookup_kwarg: str = 'id', queryset: Select = select(User)) -> User:
+    async def retrieve_user(self, search_value: int, lookup_kwarg: str = 'id', db_query: Select = select(User)) -> User:
         return await mixins_crud_services.CRUDOperationsService(self.db_session).get_object(
-            queryset, User, search_value, lookup_kwarg=lookup_kwarg
+            db_query, User, search_value, lookup_kwarg=lookup_kwarg
         )
 
     async def update_user(self, user: User, **data_for_update) -> User:

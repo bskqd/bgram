@@ -2,12 +2,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi_utils.cbv import cbv
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 import chat.dependencies.messages
 from accounts.models import User
-from chat.dependencies import messages as messages_dependencies
+from chat.models import Message
 from chat.permissions.messages import UserChatRoomMessagingPermissions
 from chat.schemas.messages import (ListMessagesSchema, CreateMessageSchema, UpdateMessageSchema,
                                    PaginatedListMessagesSchema)
@@ -44,9 +45,9 @@ async def chat_websocket_endpoint(
 
 @cbv(router)
 class MessagesView(mixins_views.AbstractView):
-    queryset: Select = Depends(messages_dependencies.get_messages_queryset)
     db_session: Session = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
+    db_query = select(Message)
 
     async def check_permissions(self, chat_room_id: int, message_id: Optional[int] = None):
         await UserIsAuthenticatedPermission(self.request_user).check_permissions()
@@ -62,7 +63,7 @@ class MessagesView(mixins_views.AbstractView):
     async def list_messages_view(self, chat_room_id: int):
         await self.check_permissions(chat_room_id)
         return self.get_paginated_response(
-            await MessagesService(self.db_session).list_messages(chat_room_id, self.queryset)
+            await MessagesService(self.db_session).list_messages(chat_room_id, self.get_db_query())
         )
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
