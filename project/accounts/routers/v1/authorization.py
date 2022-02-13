@@ -2,12 +2,12 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from sqlalchemy import select, true
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.models import User, EmailConfirmationToken
 from accounts.schemas import users as user_schemas, authorization as authorization_schemas
-from accounts.services.users import UserService
 from accounts.services.authorization import create_email_confirmation_token
+from accounts.services.users import UserService
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
 from mixins import dependencies as mixins_dependencies
@@ -21,7 +21,7 @@ router = APIRouter()
 async def registration_view(
         user: user_schemas.UserCreateSchema,
         background_tasks: BackgroundTasks,
-        db_session: Session = Depends(mixins_dependencies.db_session),
+        db_session: AsyncSession = Depends(mixins_dependencies.db_session),
 ) -> str:
     user_data = user.dict()
     user_data['is_active'] = False
@@ -40,7 +40,7 @@ async def registration_view(
 @router.post('/login')
 async def login_view(
         login_data: authorization_schemas.LoginSchema,
-        db_session: Session = Depends(mixins_dependencies.db_session)
+        db_session: AsyncSession = Depends(mixins_dependencies.db_session)
 ) -> dict[str, str]:
     get_user_query = select(User).where(User.email == login_data.email, User.is_active == true())
     user = await db_session.scalar(get_user_query)
@@ -55,7 +55,7 @@ async def login_view(
 @router.post('/confirm_email')
 async def confirm_email_view(
         token: authorization_schemas.EmailConfirmationSchema,
-        db_session: Session = Depends(mixins_dependencies.db_session)
+        db_session: AsyncSession = Depends(mixins_dependencies.db_session)
 ) -> str:
     get_user_query = select(User).join(
         User.email_confirmation_tokens

@@ -3,15 +3,14 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import WebSocket
-from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
+from sqlalchemy import select
 from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
 from chat.schemas.messages import ListMessagesSchema
-from mixins.services.crud import CRUDOperationsService
+from database.repository import SQLAlchemyCRUDRepository
 
 
 class WebSocketConnection:
@@ -50,37 +49,36 @@ chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
 class MessagesService:
     def __init__(
             self,
-            db_session: Session,
+            db_repository: SQLAlchemyCRUDRepository,
             chat_room_id: Optional[int] = None,
             broadcast_action_to_chat_room: bool = True
     ):
-        self.db_session = db_session
+        self.db_repository = db_repository
         self.chat_room_id = chat_room_id
         self.broadcast_action_to_chat_room = broadcast_action_to_chat_room
 
-    async def list_messages(
-            self,
-            chat_room_id: Optional[int] = None,
-            queryset: Select = select(Message)
-    ) -> List[Message]:
-        if chat_room_id:
-            queryset = queryset.where(Message.chat_room_id == chat_room_id)
-        messages = await self.db_session.scalars(queryset)
-        return messages.all()
+    async def list_messages(self, db_query: Select = select(Message)) -> List[Message]:
+        self.db_repository.db_query = db_query
+        return await self.db_repository.get_many()
 
-    async def create_message(self, chat_room_id: int, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
-        message = Message(chat_room_id=chat_room_id, text=text, author_id=author_id, **kwargs)
-        created_message = await CRUDOperationsService(self.db_session).create_object_in_database(message)
+    async def create_message(self, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
+        message = Message(chat_room_id=self.chat_room_id, text=text, author_id=author_id, **kwargs)
+        created_message = await self.db_repository.create(message)
+        await self.db_repository.commit()
+        await self.db_repository.refresh(created_message)
         if self.broadcast_action_to_chat_room:
             await self._broadcast_action_to_chat_room(
-                chat_room_id, MessagesActionTypeEnum.CREATED.value, ListMessagesSchema.from_orm(created_message).dict(),
+                self.chat_room_id, MessagesActionTypeEnum.CREATED.value,
+                ListMessagesSchema.from_orm(created_message).dict(),
             )
         return created_message
 
     async def update_message(self, message: Message, **kwargs) -> Message:
         if not message.is_edited:
             kwargs['is_edited'] = True
-        updated_message = await CRUDOperationsService(self.db_session).update_object_in_database(message, **kwargs)
+        updated_message = await self.db_repository.update_object(message, **kwargs)
+        await self.db_repository.commit()
+        await self.db_repository.refresh(updated_message)
         if self.broadcast_action_to_chat_room:
             await self._broadcast_action_to_chat_room(
                 self.chat_room_id, MessagesActionTypeEnum.UPDATED.value,
@@ -89,7 +87,7 @@ class MessagesService:
         return updated_message
 
     async def delete_message(self, message_id: int) -> int:
-        await self.db_session.execute(delete(Message).where(Message.id == message_id))
+        await self.db_repository.delete(Message.id == message_id)
         if self.broadcast_action_to_chat_room:
             await self._broadcast_action_to_chat_room(
                 self.chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_id': message_id},

@@ -4,7 +4,7 @@ import uuid
 from typing import Any
 
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from mixins.services import crud as mixins_crud_services
@@ -15,7 +15,7 @@ class FilesService:
     Service class for working with files.
     """
 
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
     async def create_object_file(

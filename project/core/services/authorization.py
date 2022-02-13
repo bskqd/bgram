@@ -10,7 +10,7 @@ from starlette import status
 
 from accounts.models import User
 from core.config import settings
-from database import DatabaseSession
+from database.base import DatabaseSession
 
 VALID_TOKEN_TYPES = frozenset([settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE])
 

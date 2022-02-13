@@ -1,7 +1,8 @@
 from typing import Optional, List, Any, Iterable
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
 from accounts.models import User
@@ -10,7 +11,7 @@ from mixins.services.crud import CRUDOperationsService
 
 
 class ChatRoomService:
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
     async def create_chat_room(self, name: str, members_ids: List[int], **kwargs) -> ChatRoom:

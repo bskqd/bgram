@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi_mail import ConnectionConfig
@@ -9,6 +10,8 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
+    BASE_DIR = Path(__file__).resolve().parent.parent
+
     DATABASE_URL: str = os.getenv('DATABASE_URL')
     HOST_DOMAIN: str = os.getenv('HOST_DOMAIN', 'http://127.0.0.1:8000')
 
@@ -25,7 +28,7 @@ class Settings(BaseSettings):
         MAIL_TLS=True,
         MAIL_SSL=False,
         USE_CREDENTIALS=True,
-        TEMPLATE_FOLDER='notifications/templates/email'
+        TEMPLATE_FOLDER=os.path.join(BASE_DIR, 'notifications', 'templates', 'email')
     )
 
     JWT_TOKEN_TYPE_NAME: str = 'Bearer'

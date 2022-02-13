@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import UploadFile
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from accounts.models import User, UserPhoto
@@ -11,7 +11,7 @@ from mixins.services import crud as mixins_crud_services, files as mixins_files_
 
 
 class UserService:
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:

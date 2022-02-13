@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import relationship
 
 from chat.constants import chat_rooms as chat_rooms_constants
-from database import Base
+from database.base import Base
 from mixins.models import DateTimeABC, DescriptionABC, IsActiveABC, PhotoABC
 
 __all__ = ['chatroom_members_association_table', 'ChatRoom', 'ChatRoomPhoto']

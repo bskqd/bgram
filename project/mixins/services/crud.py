@@ -1,9 +1,9 @@
 from typing import Any, Type
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
-from database import Base
+from database.base import Base
 
 
 class CRUDOperationsService:
@@ -11,7 +11,7 @@ class CRUDOperationsService:
     Service class for common CRUD operations with objects.
     """
 
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
     async def get_object(

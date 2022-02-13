@@ -3,7 +3,8 @@ from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
 from accounts.models import User
@@ -18,7 +19,7 @@ router = APIRouter()
 
 @cbv(router)
 class UserView(mixins_views.AbstractView):
-    db_session: Session = Depends(mixins_dependencies.db_session)
+    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
 
     def get_db_query(self) -> Select:
         return select(

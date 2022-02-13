@@ -1,6 +1,6 @@
 from sqlalchemy import Column, DateTime, func, String, Integer, Boolean
 
-from database import Base
+from database.base import Base
 
 
 class DateTimeABC(Base):

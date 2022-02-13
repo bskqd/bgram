@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import Request
 
 from accounts.models import User
-from database import DatabaseSession
+from database.base import DatabaseSession
 
 
 async def db_session() -> DatabaseSession:

@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 from fastapi import Request
 
-from database import Base
+from database.base import Base
 
 
 class DefaultPaginationClass:

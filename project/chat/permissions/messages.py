@@ -2,7 +2,8 @@ from typing import Optional
 
 from fastapi import Request
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from accounts.models import User
 from chat.models import chatroom_members_association_table, Message
@@ -18,7 +19,7 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
             self,
             request_user: User,
             chat_room_id: int,
-            db_session: Session,
+            db_session: AsyncSession,
             request: Optional[Request] = None,
             message_id: Optional[int] = None
     ):

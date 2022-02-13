@@ -5,7 +5,7 @@ from fastapi import Request, Depends, HTTPException
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from database import Base
+from database.base import Base
 from mixins import dependencies as mixins_dependencies
 
 
@@ -18,7 +18,7 @@ class AbstractView(ABC):
     db_query = None
     pagination_class = None
 
-    def get_db_query(self) -> Select:
+    def get_db_query(self, *args) -> Select:
         if hasattr(self, 'db_query'):
             return self.db_query
         raise HTTPException(status_code=400, detail=f'Default db query for {self.__class__} is not specified')

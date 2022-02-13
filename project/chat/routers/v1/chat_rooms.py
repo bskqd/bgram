@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
 from accounts.models import User
@@ -18,7 +19,7 @@ router = APIRouter()
 
 @cbv(router)
 class ChatRoomView(mixins_views.AbstractView):
-    db_session: Session = Depends(mixins_dependencies.db_session)
+    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
 
     async def check_permissions(self):
