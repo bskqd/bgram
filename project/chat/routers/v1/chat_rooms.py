@@ -10,6 +10,7 @@ from chat.models import ChatRoom, chatroom_members_association_table
 from chat.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
                                      ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
+from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 from mixins.pagination import DefaultPaginationClass
 from mixins.permissions import UserIsAuthenticatedPermission
@@ -39,14 +40,14 @@ class ChatRoomView(mixins_views.AbstractView):
     @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)
     async def list_chat_rooms_view(self):
         await self.check_permissions()
-        return self.get_paginated_response(
-            await ChatRoomService(self.db_session).list_chat_rooms(db_query=self.get_db_query())
-        )
+        db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session, self.get_db_query())
+        return self.get_paginated_response(await db_repository.get_many())
 
     @router.get('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
     async def retrieve_chat_room_view(self, chat_room_id: int):
         await self.check_permissions()
-        return await ChatRoomService(self.db_session).retrieve_chat_room(chat_room_id, db_query=self.get_db_query())
+        db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session, self.get_db_query())
+        return await db_repository.get_one(ChatRoom.id == chat_room_id)
 
     @router.post('/chat_rooms', response_model=ChatRoomDetailSchema)
     async def create_chat_room_view(self, chat_room_data: ChatRoomCreateSchema):
@@ -54,17 +55,22 @@ class ChatRoomView(mixins_views.AbstractView):
         chat_room_data = chat_room_data.dict()
         name = chat_room_data.pop('name')
         members = chat_room_data.pop('members', [])
-        return await ChatRoomService(self.db_session).create_chat_room(name, members, **chat_room_data)
+        db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session)
+        chat_room = await ChatRoomService(db_repository).create_chat_room(name, members, **chat_room_data)
+        db_repository.db_query = select(ChatRoom).options(
+            joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
+        )
+        return await db_repository.get_one(ChatRoom.id == chat_room.id)
 
     @router.patch('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
     async def update_chat_room_view(self, chat_room_id: int, chat_room_data: ChatRoomUpdateSchema):
         await self.check_permissions()
-        chat_room_service = ChatRoomService(self.db_session)
-        chat_room = await chat_room_service.retrieve_chat_room(chat_room_id, db_query=self.get_db_query())
+        db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session, self.get_db_query())
+        chat_room = await db_repository.get_one(ChatRoom.id == chat_room_id)
         chat_room_data: dict = chat_room_data.dict(exclude_unset=True)
         members = chat_room_data.pop('members', None)
         if members:
-            select_members_query = select(User).where(User.id.in_(members))
-            members = await self.db_session.scalars(select_members_query)
-            members = members.all()
-        return await chat_room_service.update_chat_room(chat_room, members=members, **chat_room_data)
+            db_repository.db_query = select(User).where(User.id.in_(members))
+            members = await db_repository.get_many()
+            db_repository.db_query = None
+        return await ChatRoomService(db_repository).update_chat_room(chat_room, members=members, **chat_room_data)

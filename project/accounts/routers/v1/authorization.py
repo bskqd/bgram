@@ -10,8 +10,8 @@ from accounts.services.authorization import create_email_confirmation_token
 from accounts.services.users import UserService
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
+from database.repository import SQLAlchemyCRUDRepository
 from mixins import dependencies as mixins_dependencies
-from mixins.services import crud as mixins_crud_services
 from notifications.background_tasks.email import send_email
 
 router = APIRouter()
@@ -28,7 +28,8 @@ async def registration_view(
     nickname = user_data.pop('nickname')
     email = user_data.pop('email')
     password = user_data.pop('password')
-    user = await UserService(db_session).create_user(nickname, email, password, **user_data)
+    db_repository = SQLAlchemyCRUDRepository(User, db_session)
+    user = await UserService(db_repository).create_user(nickname, email, password, **user_data)
     token = await create_email_confirmation_token(user, db_session)
     email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
     send_email(
@@ -62,10 +63,9 @@ async def confirm_email_view(
     ).where(
         EmailConfirmationToken.created_at >= datetime.now() - timedelta(settings.EMAIL_CONFIRMATION_TOKEN_VALID_HOURS)
     )
-    user = await mixins_crud_services.CRUDOperationsService(db_session).get_object(
-        get_user_query, EmailConfirmationToken, token.token, 'token'
-    )
-    await UserService(db_session).update_user(user, is_active=True)
+    db_repository = SQLAlchemyCRUDRepository(User, db_session, get_user_query)
+    user = await db_repository.get_one(EmailConfirmationToken.token == token.token)
+    await UserService(db_repository).update_user(user, is_active=True)
     return 'Your email is successfully confirmed.'
 
 

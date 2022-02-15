@@ -4,10 +4,9 @@ import uuid
 from typing import Any
 
 from fastapi import UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
-from mixins.services import crud as mixins_crud_services
+from database.repository import SQLAlchemyCRUDRepository
 
 
 class FilesService:
@@ -15,8 +14,8 @@ class FilesService:
     Service class for working with files.
     """
 
-    def __init__(self, db_session: AsyncSession):
-        self.db_session = db_session
+    def __init__(self, db_repository: SQLAlchemyCRUDRepository):
+        self.db_repository = db_repository
 
     async def create_object_file(
             self,
@@ -35,9 +34,10 @@ class FilesService:
             None, self.write_file, folder_to_save_file, file.filename, content_to_write
         )
         object_to_create_in_db.file_path = file_path
-        return await mixins_crud_services.CRUDOperationsService(self.db_session).create_object_in_database(
-            object_to_create_in_db
-        )
+        model_instance = await self.db_repository.create(object_to_create_in_db)
+        await self.db_repository.commit()
+        await self.db_repository.refresh(model_instance)
+        return model_instance
 
     @staticmethod
     def write_file(folder_to_save_file: str, filename: str, content_to_write: bytes) -> str:

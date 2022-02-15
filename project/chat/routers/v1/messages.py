@@ -65,10 +65,8 @@ class MessagesView(mixins_views.AbstractView):
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
         await self.check_permissions(chat_room_id)
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        return self.get_paginated_response(
-            await MessagesService(db_repository, chat_room_id).list_messages(self.get_db_query(chat_room_id))
-        )
+        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session, self.get_db_query(chat_room_id))
+        return self.get_paginated_response(await db_repository.get_many())
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
     async def create_message_view(self, chat_room_id: int, message_data: CreateMessageSchema):

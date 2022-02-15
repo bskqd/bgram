@@ -51,10 +51,10 @@ class SQLAlchemyCRUDRepository:
         db_query = self.db_query.where(*args) if self.db_query is not None else select(self.model).where(*args)
         return await self.__db_session.scalar(db_query)
 
-    async def get_many(self, *args: Any) -> Model:
+    async def get_many(self, unique_results: bool = True, *args: Any) -> Model:
         db_query = self.db_query.where(*args) if self.db_query is not None else select(self.model).where(*args)
         results = await self.__db_session.scalars(db_query)
-        return results.all()
+        return results.unique().all() if unique_results else results.all()
 
     async def update_object(self, object_to_update: Optional[Model], **kwargs) -> Model:
         for attr, value in kwargs.items():

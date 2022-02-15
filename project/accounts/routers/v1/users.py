@@ -11,6 +11,7 @@ from accounts.models import User
 from accounts.schemas import users as user_schemas
 from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
+from database.repository import SQLAlchemyCRUDRepository
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
 
@@ -34,20 +35,22 @@ class UserView(mixins_views.AbstractView):
 
     @router.get('/users', response_model=List[user_schemas.UserSchema])
     async def list_users_view(self):
-        return await UserService(self.db_session).list_users(self.get_db_query())
+        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
+        return await db_repository.get_many()
 
     @router.get('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def retrieve_user_view(self, user_id: int):
-        return await UserService(self.db_session).retrieve_user(user_id, db_query=self.get_db_query())
+        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
+        return await db_repository.get_one(User.id == user_id)
 
     @router.patch('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def update_user_view(self, user_id: int, user_data: user_schemas.UserUpdateSchema):
-        user_service = UserService(self.db_session)
-        user = await user_service.retrieve_user(user_id, db_query=self.get_db_query())
-        return await user_service.update_user(user, **user_data.dict(exclude_unset=True))
+        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
+        user = await db_repository.get_one(User.id == user_id)
+        return await UserService(db_repository).update_user(user, **user_data.dict(exclude_unset=True))
 
     @router.post('/users/{user_id}/upload_file', response_model=user_schemas.UserSchema)
     async def upload_user_photo_view(self, user_id: int, file: UploadFile = File(...)):
-        user_service = UserService(self.db_session)
-        await user_service.create_user_photo(user_id, file)
-        return await user_service.retrieve_user(user_id, db_query=self.get_db_query())
+        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
+        await UserService(db_repository).create_user_photo(user_id, file)
+        return await db_repository.get_one(User.id == user_id)
