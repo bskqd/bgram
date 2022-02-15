@@ -35,13 +35,11 @@ class UserView(mixins_views.AbstractView):
 
     @router.get('/users', response_model=List[user_schemas.UserSchema])
     async def list_users_view(self):
-        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
-        return await db_repository.get_many()
+        return await SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query()).get_many()
 
     @router.get('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def retrieve_user_view(self, user_id: int):
-        db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
-        return await db_repository.get_one(User.id == user_id)
+        return await SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query()).get_one(User.id == user_id)
 
     @router.patch('/users/{user_id}', response_model=user_schemas.UserSchema)
     async def update_user_view(self, user_id: int, user_data: user_schemas.UserUpdateSchema):
@@ -53,4 +51,5 @@ class UserView(mixins_views.AbstractView):
     async def upload_user_photo_view(self, user_id: int, file: UploadFile = File(...)):
         db_repository = SQLAlchemyCRUDRepository(User, self.db_session, self.get_db_query())
         await UserService(db_repository).create_user_photo(user_id, file)
+        db_repository.db_query = self.get_db_query()
         return await db_repository.get_one(User.id == user_id)
