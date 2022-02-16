@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import WebSocket
+from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.constants.messages import MessagesActionTypeEnum
@@ -54,6 +55,11 @@ class MessagesService:
         self.db_repository = db_repository
         self.chat_room_id = chat_room_id
         self.broadcast_action_to_chat_room = broadcast_action_to_chat_room
+
+    async def list_messages(self, *args, db_query: Optional[Select] = None) -> User:
+        if db_query:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_many(*args)
 
     async def create_message(self, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
         message = Message(chat_room_id=self.chat_room_id, text=text, author_id=author_id, **kwargs)

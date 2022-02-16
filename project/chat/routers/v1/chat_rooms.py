@@ -41,13 +41,13 @@ class ChatRoomView(mixins_views.AbstractView):
     async def list_chat_rooms_view(self):
         await self.check_permissions()
         db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session, self.get_db_query())
-        return self.get_paginated_response(await db_repository.get_many())
+        return self.get_paginated_response(await ChatRoomService(db_repository).list_chat_rooms())
 
     @router.get('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
     async def retrieve_chat_room_view(self, chat_room_id: int):
         await self.check_permissions()
         db_repository = SQLAlchemyCRUDRepository(ChatRoom, self.db_session, self.get_db_query())
-        return await db_repository.get_one(ChatRoom.id == chat_room_id)
+        return await ChatRoomService(db_repository).retrieve_chat_room(ChatRoom.id == chat_room_id)
 
     @router.post('/chat_rooms', response_model=ChatRoomDetailSchema)
     async def create_chat_room_view(self, chat_room_data: ChatRoomCreateSchema):

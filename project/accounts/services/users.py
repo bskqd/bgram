@@ -1,7 +1,10 @@
+from typing import Optional
+
 from fastapi import UploadFile
+from sqlalchemy.sql import Select
 
 from accounts.models import User, UserPhoto
-from accounts.utils.users import get_hashed_password
+from accounts.utils.users import hash_password
 from database.repository import SQLAlchemyCRUDRepository
 from mixins.services import files as mixins_files_services
 
@@ -10,8 +13,18 @@ class UserService:
     def __init__(self, db_repository: SQLAlchemyCRUDRepository):
         self.db_repository = db_repository
 
+    async def retrieve_user(self, *args, db_query: Optional[Select] = None) -> User:
+        if db_query:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_one(*args)
+
+    async def list_users(self, *args, db_query: Optional[Select] = None) -> User:
+        if db_query:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_many(*args)
+
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:
-        user = User(nickname=nickname, email=email, password=get_hashed_password(password), **kwargs)
+        user = User(nickname=nickname, email=email, password=hash_password(password), **kwargs)
         await self.db_repository.create(user)
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
