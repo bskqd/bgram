@@ -49,12 +49,10 @@ class MessagesService:
     def __init__(
             self,
             db_repository: SQLAlchemyCRUDRepository,
-            chat_room_id: Optional[int] = None,
-            broadcast_action_to_chat_room: bool = True
+            chat_room_id: Optional[int] = None
     ):
         self.db_repository = db_repository
         self.chat_room_id = chat_room_id
-        self.broadcast_action_to_chat_room = broadcast_action_to_chat_room
 
     async def list_messages(self, *args, db_query: Optional[Select] = None) -> User:
         if db_query:
@@ -66,11 +64,9 @@ class MessagesService:
         created_message = await self.db_repository.create(message)
         await self.db_repository.commit()
         await self.db_repository.refresh(created_message)
-        if self.broadcast_action_to_chat_room:
-            await self._broadcast_action_to_chat_room(
-                self.chat_room_id, MessagesActionTypeEnum.CREATED.value,
-                ListMessagesSchema.from_orm(created_message).dict(),
-            )
+        await self._broadcast_message_to_chat_room(
+            self.chat_room_id, MessagesActionTypeEnum.CREATED.value, ListMessagesSchema.from_orm(created_message).dict()
+        )
         return created_message
 
     async def update_message(self, message: Message, **kwargs) -> Message:
@@ -79,23 +75,17 @@ class MessagesService:
         updated_message = await self.db_repository.update_object(message, **kwargs)
         await self.db_repository.commit()
         await self.db_repository.refresh(updated_message)
-        if self.broadcast_action_to_chat_room:
-            await self._broadcast_action_to_chat_room(
-                self.chat_room_id, MessagesActionTypeEnum.UPDATED.value,
-                ListMessagesSchema.from_orm(updated_message).dict(),
-            )
+        await self._broadcast_message_to_chat_room(
+            self.chat_room_id, MessagesActionTypeEnum.UPDATED.value, ListMessagesSchema.from_orm(updated_message).dict()
+        )
         return updated_message
 
     async def delete_message(self, message_id: int) -> int:
         await self.db_repository.delete(Message.id == message_id)
-        if self.broadcast_action_to_chat_room:
-            await self._broadcast_action_to_chat_room(
-                self.chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_id': message_id},
-            )
+        await self._broadcast_message_to_chat_room(
+            self.chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_id': message_id},
+        )
         return message_id
 
-    async def _broadcast_action_to_chat_room(self, chat_room_id: int, action: str, message_data: dict):
-        await chat_rooms_websocket_manager.broadcast(
-            message={'action': action, **message_data},
-            chat_room_id=chat_room_id
-        )
+    async def _broadcast_message_to_chat_room(self, chat_room_id: int, action: str, message_data: dict):
+        await chat_rooms_websocket_manager.broadcast({'action': action, **message_data}, chat_room_id)

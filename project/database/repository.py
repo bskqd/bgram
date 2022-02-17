@@ -48,11 +48,13 @@ class SQLAlchemyCRUDRepository:
         return await self.__db_session.bulk_save_objects(*instances)
 
     async def get_one(self, *args) -> Model:
-        db_query = getattr(self, 'db_query', select(self.model)).where(*args)
+        db_query = self.db_query or select(self.model)
+        db_query = db_query.where(*args)
         return await self.__db_session.scalar(db_query)
 
     async def get_many(self, unique_results: bool = True, *args: Any) -> Model:
-        db_query = getattr(self, 'db_query', select(self.model)).where(*args)
+        db_query = self.db_query or select(self.model)
+        db_query = db_query.where(*args)
         results = await self.__db_session.scalars(db_query)
         return results.unique().all() if unique_results else results.all()
 
@@ -68,19 +70,22 @@ class SQLAlchemyCRUDRepository:
         return await self.__db_session.scalar(select_query)
 
     async def delete(self, *args: Any) -> List[Model]:
-        db_query = getattr(self, 'db_query', delete(self.model)).where(*args).returning('*')
+        db_query = delete(self.model).where(*args).returning('*')
         results = await self.__db_session.scalars(db_query)
         return results.all()
 
     async def exists(self, *args: Any) -> Optional[bool]:
         """Check is row exists in database"""
-        select_db_query = getattr(self, 'db_query', select(self.model)).where(*args)
+        select_db_query = self.db_query or select(self.model)
+        select_db_query = select_db_query.where(*args)
         exists_db_query = exists(select_db_query).select()
         result = await self.__db_session.scalar(exists_db_query)
         return cast(Optional[bool], result)
 
-    async def count(self) -> int:
-        db_query = select(func.count()).select_from(getattr(self, 'db_query', select(self.model)).subquery())
+    async def count(self, *args) -> int:
+        db_query = self.db_query or select(self.model)
+        db_query = db_query.where(*args)
+        db_query = select(func.count()).select_from(db_query).subquery()
         result = await self.__db_session.execute(db_query)
         count = result.scalar_one()
         return cast(int, count)
