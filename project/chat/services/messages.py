@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import WebSocket
-from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.constants.messages import MessagesActionTypeEnum

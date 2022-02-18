@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Coroutine, Callable
+from typing import Tuple
 
 from fastapi import Request
 from sqlalchemy.sql import Select

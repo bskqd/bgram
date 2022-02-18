@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional, Callable
+from typing import Optional
 
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy.sql import Select
