@@ -48,14 +48,10 @@ class SQLAlchemyCRUDRepository:
         return await self.__db_session.bulk_save_objects(*instances)
 
     async def get_one(self, *args) -> Model:
-        db_query = self.db_query or select(self.model)
-        db_query = db_query.where(*args)
-        return await self.__db_session.scalar(db_query)
+        return await self.__db_session.scalar(self._get_db_query(*args))
 
     async def get_many(self, unique_results: bool = True, *args: Any) -> Model:
-        db_query = self.db_query or select(self.model)
-        db_query = db_query.where(*args)
-        results = await self.__db_session.scalars(db_query)
+        results = await self.__db_session.scalars(self._get_db_query(*args))
         return results.unique().all() if unique_results else results.all()
 
     async def update_object(self, object_to_update: Optional[Model], **kwargs) -> Model:
@@ -76,19 +72,20 @@ class SQLAlchemyCRUDRepository:
 
     async def exists(self, *args: Any) -> Optional[bool]:
         """Check is row exists in database"""
-        select_db_query = self.db_query or select(self.model)
-        select_db_query = select_db_query.where(*args)
+        select_db_query = self._get_db_query(*args)
         exists_db_query = exists(select_db_query).select()
         result = await self.__db_session.scalar(exists_db_query)
         return cast(Optional[bool], result)
 
     async def count(self, *args) -> int:
-        db_query = self.db_query or select(self.model)
-        db_query = db_query.where(*args)
-        db_query = select(func.count()).select_from(db_query).subquery()
+        db_query = self._get_db_query(*args)
+        db_query = select(func.count()).select_from(db_query)
         result = await self.__db_session.execute(db_query)
         count = result.scalar_one()
         return cast(int, count)
+
+    def _get_db_query(self, *args):
+        return self.db_query.where(*args) if self.db_query is not None else select(self.model).where(*args)
 
     def _convert_to_model(self, **kwargs) -> Model:
         return self.model(**kwargs)

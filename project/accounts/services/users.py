@@ -14,12 +14,12 @@ class UserService:
         self.db_repository = db_repository
 
     async def retrieve_user(self, *args, db_query: Optional[Select] = None) -> User:
-        if db_query:
+        if db_query is not None:
             self.db_repository.db_query = db_query
         return await self.db_repository.get_one(*args)
 
     async def list_users(self, *args, db_query: Optional[Select] = None) -> User:
-        if db_query:
+        if db_query is not None:
             self.db_repository.db_query = db_query
         return await self.db_repository.get_many(*args)
 

@@ -1,11 +1,11 @@
 from abc import ABC
-from typing import List, Optional
+from typing import Optional, Callable
 
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from database.base import Base
+from database.repository import SQLAlchemyCRUDRepository
 from mixins import dependencies as mixins_dependencies
 
 
@@ -23,8 +23,17 @@ class AbstractView(ABC):
             return self.db_query
         raise HTTPException(status_code=400, detail=f'Default db query for {self.__class__} is not specified')
 
-    def get_paginated_response(self, queryset: List[Base], **kwargs) -> dict:
+    async def get_paginated_response(
+            self,
+            db_repository: SQLAlchemyCRUDRepository,
+            db_query: Select,
+            **kwargs
+    ) -> dict:
         pagintion_class = self.pagination_class
         if pagintion_class:
-            return pagintion_class(self.request, **kwargs).paginate(queryset)
+            return await pagintion_class(
+                self.request,
+                db_repository,
+                **kwargs
+            ).paginate(db_query)
         raise HTTPException(status_code=400, detail=f'Pagination class for {self.__class__} is not specified')
