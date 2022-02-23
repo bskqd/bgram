@@ -5,12 +5,12 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User, UserPhoto
 from accounts.utils.users import hash_password
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 from mixins.services import files as mixins_files_services
 
 
 class UserService:
-    def __init__(self, db_repository: SQLAlchemyCRUDRepository):
+    def __init__(self, db_repository: BaseCRUDRepository):
         self.db_repository = db_repository
 
     async def retrieve_user(self, *args, db_query: Optional[Select] = None) -> User:

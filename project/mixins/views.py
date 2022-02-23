@@ -5,7 +5,7 @@ from fastapi import Request, Depends, HTTPException
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 from mixins import dependencies as mixins_dependencies
 
 
@@ -25,7 +25,7 @@ class AbstractView(ABC):
 
     async def get_paginated_response(
             self,
-            db_repository: SQLAlchemyCRUDRepository,
+            db_repository: BaseCRUDRepository,
             db_query: Select,
             **kwargs
     ) -> dict:

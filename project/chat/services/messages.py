@@ -8,7 +8,7 @@ from accounts.models import User
 from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
 from chat.schemas.messages import ListMessagesSchema
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 
 
 class WebSocketConnection:
@@ -47,7 +47,7 @@ chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
 class MessagesService:
     def __init__(
             self,
-            db_repository: SQLAlchemyCRUDRepository,
+            db_repository: BaseCRUDRepository,
             chat_room_id: Optional[int] = None
     ):
         self.db_repository = db_repository

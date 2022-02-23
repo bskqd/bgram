@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import UploadFile
 
 from core.config import settings
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 
 
 class FilesService:
@@ -14,7 +14,7 @@ class FilesService:
     Service class for working with files.
     """
 
-    def __init__(self, db_repository: SQLAlchemyCRUDRepository):
+    def __init__(self, db_repository: BaseCRUDRepository):
         self.db_repository = db_repository
 
     async def create_object_file(

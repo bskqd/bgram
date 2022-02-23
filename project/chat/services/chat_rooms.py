@@ -5,11 +5,11 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import ChatRoom
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 
 
 class ChatRoomService:
-    def __init__(self, db_repository: SQLAlchemyCRUDRepository):
+    def __init__(self, db_repository: BaseCRUDRepository):
         self.db_repository = db_repository
 
     async def retrieve_chat_room(self, *args, db_query: Optional[Select] = None) -> User:

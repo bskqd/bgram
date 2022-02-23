@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import TypeVar, Type, Any, Optional, List, cast, AsyncContextManager
 
@@ -9,7 +10,13 @@ Model = TypeVar('Model')
 TransactionContext = AsyncContextManager[AsyncSessionTransaction]
 
 
-class SQLAlchemyTransactionRepository:
+class BaseTransactionRepository(ABC):
+    @abstractmethod
+    async def transaction(self):
+        pass
+
+
+class SQLAlchemyTransactionRepository(BaseTransactionRepository):
     def __init__(self, db_session: AsyncSession):
         self.__db_session = db_session
 
@@ -20,7 +27,61 @@ class SQLAlchemyTransactionRepository:
         await transaction.rollback()
 
 
-class SQLAlchemyCRUDRepository:
+class BaseCRUDRepository(ABC):
+    @abstractmethod
+    def add(self, object_to_add) -> None:
+        pass
+
+    @abstractmethod
+    async def commit(self) -> None:
+        pass
+
+    @abstractmethod
+    async def refresh(self, object_to_refresh) -> None:
+        pass
+
+    @abstractmethod
+    async def rollback(self) -> None:
+        pass
+
+    @abstractmethod
+    async def create(self, **kwargs):
+        pass
+
+    @abstractmethod
+    async def bulk_create(self, *args) -> None:
+        pass
+
+    @abstractmethod
+    async def update_object(self, object_to_update, **kwargs):
+        pass
+
+    @abstractmethod
+    async def update(self, *args: Any, **kwargs: Any):
+        pass
+
+    @abstractmethod
+    async def delete(self, *args: Any):
+        pass
+
+    @abstractmethod
+    async def get_one(self, *args):
+        pass
+
+    @abstractmethod
+    async def get_many(self, *args):
+        pass
+
+    @abstractmethod
+    async def exists(self, *args):
+        pass
+
+    @abstractmethod
+    async def count(self, *args):
+        pass
+
+
+class SQLAlchemyCRUDRepository(BaseCRUDRepository):
 
     def __init__(self, model: Type[Model], db_session: AsyncSession, db_query: Optional[Select] = None):
         self.model = model
@@ -40,19 +101,12 @@ class SQLAlchemyCRUDRepository:
         await self.__db_session.rollback()
 
     async def create(self, object_to_create: Optional[Model] = None, **kwargs: Any) -> Model:
-        object_to_create = object_to_create if object_to_create else self._convert_to_model(**kwargs)
+        object_to_create = object_to_create if object_to_create else self.model(**kwargs)
         self.add(object_to_create)
         return object_to_create
 
     async def bulk_create(self, *instances) -> None:
         return await self.__db_session.bulk_save_objects(*instances)
-
-    async def get_one(self, *args) -> Model:
-        return await self.__db_session.scalar(self._get_db_query(*args))
-
-    async def get_many(self, unique_results: bool = True, *args: Any) -> Model:
-        results = await self.__db_session.scalars(self._get_db_query(*args))
-        return results.unique().all() if unique_results else results.all()
 
     async def update_object(self, object_to_update: Optional[Model], **kwargs) -> Model:
         for attr, value in kwargs.items():
@@ -70,8 +124,14 @@ class SQLAlchemyCRUDRepository:
         results = await self.__db_session.scalars(db_query)
         return results.all()
 
+    async def get_one(self, *args) -> Model:
+        return await self.__db_session.scalar(self._get_db_query(*args))
+
+    async def get_many(self, *args: Any, unique_results: bool = True) -> Model:
+        results = await self.__db_session.scalars(self._get_db_query(*args))
+        return results.unique().all() if unique_results else results.all()
+
     async def exists(self, *args: Any) -> Optional[bool]:
-        """Check is row exists in database"""
         select_db_query = self._get_db_query(*args)
         exists_db_query = exists(select_db_query).select()
         result = await self.__db_session.scalar(exists_db_query)
@@ -86,6 +146,3 @@ class SQLAlchemyCRUDRepository:
 
     def _get_db_query(self, *args):
         return self.db_query.where(*args) if self.db_query is not None else select(self.model).where(*args)
-
-    def _convert_to_model(self, **kwargs) -> Model:
-        return self.model(**kwargs)

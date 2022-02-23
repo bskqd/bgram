@@ -4,14 +4,14 @@ from typing import Tuple
 from fastapi import Request
 from sqlalchemy.sql import Select
 
-from database.repository import SQLAlchemyCRUDRepository
+from database.repository import BaseCRUDRepository
 
 
 class DefaultPaginationClass:
     def __init__(
             self,
             request: Request,
-            db_repository: SQLAlchemyCRUDRepository,
+            db_repository: BaseCRUDRepository,
             page_number_param: str = 'page',
             page_size_param: str = 'page_size_param'
     ):
