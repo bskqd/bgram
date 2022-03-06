@@ -3,12 +3,14 @@ FROM python:3.10
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 
-WORKDIR /project
+COPY requirements.txt requirements.txt
 
-COPY ./requirements.txt /project/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /project/requirements.txt
+COPY gunicorn.conf.py gunicorn.conf.py
 
 COPY ./project /project
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+WORKDIR /project
+
+CMD ["gunicorn", "main:app", "--config", "../gunicorn.conf.py"]
