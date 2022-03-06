@@ -3,11 +3,11 @@ FROM python:3.10
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 
+COPY gunicorn.conf.py gunicorn.conf.py
+
 COPY requirements.txt requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
-
-COPY gunicorn.conf.py gunicorn.conf.py
+RUN pip install --no-cache-dir --upgrade -r requirements.txt --use-deprecated=legacy-resolver
 
 COPY ./project /project
 

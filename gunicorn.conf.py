@@ -1,9 +1,14 @@
 import multiprocessing
 
+from gunicorn import glogging
+
 bind = "0.0.0.0:8000"
 worker_class = 'uvicorn.workers.UvicornWorker'
 workers = multiprocessing.cpu_count() * 2 + 1
 reload = True
 
 accesslog = '-'
-access_log_format = '%(t)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+
+logging_format = '%(asctime)s, [%(levelname)s], %(message)s'
+glogging.Logger.access_fmt = logging_format
+glogging.Logger.error_fmt = logging_format
