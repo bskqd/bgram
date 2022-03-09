@@ -2,18 +2,14 @@ from typing import List
 
 from pydantic import BaseModel
 
-from mixins.schemas import PaginatedResponseSchemaMixin
+from mixins.schemas import PaginatedResponseSchemaMixin, PhotosFieldSchemaMixin
 
 
-class CreateMessageSchema(BaseModel):
+class UpdateMessageSchema(BaseModel):
     text: str
 
 
-class UpdateMessageSchema(CreateMessageSchema):
-    pass
-
-
-class ListMessagesSchema(BaseModel):
+class ListMessagesSchema(PhotosFieldSchemaMixin):
     id: int
     is_edited: bool
     text: str

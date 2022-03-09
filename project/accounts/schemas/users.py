@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, validator
 
-from mixins import schemas as mixins_schemas
+from mixins.schemas import PhotosFieldSchemaMixin
 
 
 class UserBaseSchema(BaseModel):
@@ -29,7 +29,7 @@ class UserChatRoomsSchema(BaseModel):
         orm_mode = True
 
 
-class UserSchema(UserBaseSchema, mixins_schemas.PhotosFieldSchemaMixin):
+class UserSchema(UserBaseSchema, PhotosFieldSchemaMixin):
     id: int
     is_active: bool
     chat_rooms: List[UserChatRoomsSchema]

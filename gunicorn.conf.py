@@ -9,6 +9,6 @@ reload = True
 
 accesslog = '-'
 
-logging_format = '%(asctime)s, [%(levelname)s], %(message)s'
+logging_format = '%(asctime)s [%(levelname)s] %(message)s'
 glogging.Logger.access_fmt = logging_format
 glogging.Logger.error_fmt = logging_format

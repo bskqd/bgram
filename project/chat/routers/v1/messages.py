@@ -1,17 +1,17 @@
-from typing import Optional
+from typing import Optional, List
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
 import chat.dependencies.messages
 from accounts.models import User
 from chat.models import Message
 from chat.permissions.messages import UserChatRoomMessagingPermissions
-from chat.schemas.messages import (ListMessagesSchema, CreateMessageSchema, UpdateMessageSchema,
-                                   PaginatedListMessagesSchema)
+from chat.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.services.messages import WebSocketConnection, MessagesService
 from chat.services.messages import chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository
@@ -66,14 +66,21 @@ class MessagesView(mixins_views.AbstractView):
     async def list_messages_view(self, chat_room_id: int):
         await self.check_permissions(chat_room_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        return await self.get_paginated_response(db_repository, self.get_db_query(chat_room_id))
+        return await self.get_paginated_response(
+            db_repository, self.get_db_query(chat_room_id).options(joinedload(Message.photos))
+        )
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
-    async def create_message_view(self, chat_room_id: int, message_data: CreateMessageSchema):
+    async def create_message_view(
+            self,
+            chat_room_id: int,
+            text: str = Form(...),
+            files: Optional[List[UploadFile]] = None
+    ):
         await self.check_permissions(chat_room_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         return await MessagesService(db_repository, chat_room_id).create_message(
-            message_data.text, self.request_user.id,
+            text, files=files, author_id=self.request_user.id,
         )
 
     @router.patch('/chat_rooms/{chat_room_id}/messages/{message_id}', response_model=ListMessagesSchema)

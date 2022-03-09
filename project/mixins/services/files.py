@@ -30,8 +30,9 @@ class FilesService:
         folder_to_save_file = object_to_create_in_db.folder_to_save
         loop = asyncio.get_running_loop()
         content_to_write = await file.read()
+        filename = '_'.join([name_part for name_part in file.filename.split()])
         file_path = await loop.run_in_executor(
-            None, self.write_file, folder_to_save_file, file.filename, content_to_write
+            None, self.write_file, folder_to_save_file, filename, content_to_write
         )
         object_to_create_in_db.file_path = file_path
         model_instance = await self.db_repository.create(object_to_create_in_db)

@@ -2,13 +2,16 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from fastapi import WebSocket
+from fastapi import WebSocket, UploadFile
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from accounts.models import User
 from chat.constants.messages import MessagesActionTypeEnum
-from chat.models import Message
+from chat.models import Message, MessagePhoto
 from chat.schemas.messages import ListMessagesSchema
 from database.repository import BaseCRUDRepository
+from mixins.services.files import FilesService
 
 
 class WebSocketConnection:
@@ -53,11 +56,23 @@ class MessagesService:
         self.db_repository = db_repository
         self.chat_room_id = chat_room_id
 
-    async def create_message(self, text: str, author_id: Optional[int] = None, **kwargs) -> Message:
+    async def create_message(
+            self,
+            text: str,
+            files: Optional[List[UploadFile]] = None,
+            author_id: Optional[int] = None,
+            **kwargs
+    ) -> Message:
         message = Message(chat_room_id=self.chat_room_id, text=text, author_id=author_id, **kwargs)
         created_message = await self.db_repository.create(message)
         await self.db_repository.commit()
         await self.db_repository.refresh(created_message)
+        message_id = created_message.id
+        files_service = FilesService(self.db_repository)
+        for file in files:
+            await files_service.create_object_file(MessagePhoto, file, message_id=message_id)
+        self.db_repository.db_query = select(Message).options(joinedload(Message.photos))
+        created_message = await self.db_repository.get_one(Message.id == message_id)
         await self._broadcast_message_to_chat_room(
             self.chat_room_id, MessagesActionTypeEnum.CREATED.value, ListMessagesSchema.from_orm(created_message).dict()
         )

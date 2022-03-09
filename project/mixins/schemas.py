@@ -15,8 +15,12 @@ class FilesSchema(BaseModel):
         orm_mode = True
 
     @validator('file_path')
-    def file_path_with_media_url(cls, value) -> str:
+    def file_path_with_media_url(cls, value: str) -> str:
         return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}/{value}'
+
+    @validator('created_at')
+    def created_at_as_string(cls, value: datetime) -> str:
+        return str(value)
 
 
 class PhotosFieldSchemaMixin(BaseModel):

@@ -6,7 +6,7 @@ from sqlalchemy.sql import Select
 from accounts.models import User, UserPhoto
 from accounts.utils.users import hash_password
 from database.repository import BaseCRUDRepository
-from mixins.services import files as mixins_files_services
+from mixins.services.files import FilesService
 
 
 class UserService:
@@ -37,6 +37,4 @@ class UserService:
         return user
 
     async def create_user_photo(self, user_id: int, file: UploadFile) -> UserPhoto:
-        return await mixins_files_services.FilesService(self.db_repository).create_object_file(
-            UserPhoto, file, user_id=user_id
-        )
+        return await FilesService(self.db_repository).create_object_file(UserPhoto, file, user_id=user_id)
