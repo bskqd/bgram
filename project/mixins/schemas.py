@@ -9,6 +9,7 @@ from core.config import settings
 class FilesSchema(BaseModel):
     id: int
     created_at: datetime
+    modified_at: datetime
     file_path: str
 
     class Config:
@@ -20,6 +21,10 @@ class FilesSchema(BaseModel):
 
     @validator('created_at')
     def created_at_as_string(cls, value: datetime) -> str:
+        return str(value)
+
+    @validator('modified_at')
+    def modified_at_as_string(cls, value: datetime) -> str:
         return str(value)
 
 

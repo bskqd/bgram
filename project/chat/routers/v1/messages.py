@@ -9,15 +9,17 @@ from sqlalchemy.sql import Select
 
 import chat.dependencies.messages
 from accounts.models import User
-from chat.models import Message
+from chat.models import Message, MessagePhoto
 from chat.permissions.messages import UserChatRoomMessagingPermissions
 from chat.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
-from chat.services.messages import WebSocketConnection, MessagesService
-from chat.services.messages import chat_rooms_websocket_manager
+from chat.services.messages import MessagesService
+from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 from mixins.pagination import DefaultPaginationClass
 from mixins.permissions import UserIsAuthenticatedPermission
+from mixins.schemas import FilesSchema
+from mixins.services.files import FilesService
 
 router = APIRouter()
 
@@ -60,15 +62,15 @@ class MessagesView(mixins_views.AbstractView):
         ).check_permissions()
 
     def get_db_query(self, chat_room_id: int, *args) -> Select:
-        return select(Message).where(Message.chat_room_id == chat_room_id, *args).order_by(-Message.id)
+        return select(Message).options(joinedload(Message.photos)).where(
+            Message.chat_room_id == chat_room_id, *args
+        ).order_by(-Message.id)
 
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
         await self.check_permissions(chat_room_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        return await self.get_paginated_response(
-            db_repository, self.get_db_query(chat_room_id).options(joinedload(Message.photos))
-        )
+        return await self.get_paginated_response(db_repository, self.get_db_query(chat_room_id))
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
     async def create_message_view(
@@ -103,3 +105,14 @@ class MessagesView(mixins_views.AbstractView):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         await MessagesService(db_repository, chat_room_id).delete_message(message_id)
         return {'detail': 'success'}
+
+    @router.patch('/message_photos/{message_photo_id}', response_model=FilesSchema)
+    async def replace_message_photo(self, message_photo_id: int, file: UploadFile) -> dict:
+        db_repository = SQLAlchemyCRUDRepository(MessagePhoto, self.db_session)
+        return await FilesService(db_repository, MessagePhoto).change_file(message_photo_id, file)
+
+    @router.delete('/message_photos/{message_photo_id}')
+    async def delete_message_photo(self, message_photo_id: int) -> dict:
+        db_repository = SQLAlchemyCRUDRepository(MessagePhoto, self.db_session)
+        await FilesService(db_repository, MessagePhoto).delete_file_object(message_photo_id)
+        return {'status': 'success'}

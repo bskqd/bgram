@@ -108,7 +108,7 @@ class SQLAlchemyCRUDRepository(BaseCRUDRepository):
     async def bulk_create(self, *instances) -> None:
         return await self.__db_session.bulk_save_objects(*instances)
 
-    async def update_object(self, object_to_update: Optional[Model], **kwargs) -> Model:
+    async def update_object(self, object_to_update: Model, **kwargs) -> Model:
         for attr, value in kwargs.items():
             setattr(object_to_update, attr, value)
         self.add(object_to_update)

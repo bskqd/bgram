@@ -7,13 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
-from accounts.models import User
+from accounts.models import User, UserPhoto
 from accounts.schemas import users as user_schemas
 from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
+from mixins.services.files import FilesService
 
 router = APIRouter()
 
@@ -53,6 +54,5 @@ class UserView(mixins_views.AbstractView):
     @router.post('/users/{user_id}/upload_file', response_model=user_schemas.UserSchema)
     async def upload_user_photo_view(self, user_id: int, file: UploadFile = File(...)):
         db_repository = SQLAlchemyCRUDRepository(User, self.db_session)
-        user_service = UserService(db_repository)
-        await user_service.create_user_photo(user_id, file)
-        return await user_service.retrieve_user(User.id == user_id, db_query=self.get_db_query())
+        await FilesService(self.db_repository, UserPhoto).create_object_file(file, user_id=user_id)
+        return await UserService(db_repository).retrieve_user(User.id == user_id, db_query=self.get_db_query())

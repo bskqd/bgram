@@ -1,12 +1,10 @@
 from typing import Optional
 
-from fastapi import UploadFile
 from sqlalchemy.sql import Select
 
-from accounts.models import User, UserPhoto
+from accounts.models import User
 from accounts.utils.users import hash_password
 from database.repository import BaseCRUDRepository
-from mixins.services.files import FilesService
 
 
 class UserService:
@@ -35,6 +33,3 @@ class UserService:
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user
-
-    async def create_user_photo(self, user_id: int, file: UploadFile) -> UserPhoto:
-        return await FilesService(self.db_repository).create_object_file(UserPhoto, file, user_id=user_id)

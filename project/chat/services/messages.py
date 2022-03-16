@@ -1,50 +1,13 @@
-from collections import defaultdict
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from fastapi import WebSocket, UploadFile
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from accounts.models import User
-from chat.constants.messages import MessagesActionTypeEnum
+from chat.events.messages import message_created_event, message_updated_event, message_deleted_event
 from chat.models import Message, MessagePhoto
-from chat.schemas.messages import ListMessagesSchema
 from database.repository import BaseCRUDRepository
 from mixins.services.files import FilesService
-
-
-class WebSocketConnection:
-    def __init__(self, websocket: WebSocket, user: User, chat_room_id: int, connected_at: datetime = datetime.now()):
-        self.websocket = websocket
-        self.user = user
-        self.chat_room_id = chat_room_id
-        self.connected_at = connected_at
-
-
-class ChatRoomsWebSocketConnectionManager:
-    def __init__(self):
-        self.active_connections: Dict[int, List[WebSocketConnection]] = defaultdict(list)
-
-    async def connect(self, websocket_connection: WebSocketConnection):
-        await websocket_connection.websocket.accept()
-        self.active_connections[websocket_connection.chat_room_id].append(websocket_connection)
-
-    async def disconnect(self, websocket_connection: WebSocketConnection):
-        await websocket_connection.websocket.close()
-        chat_room_connections: List[WebSocketConnection] = self.active_connections[websocket_connection.chat_room_id]
-        if websocket_connection in chat_room_connections:
-            chat_room_connections.remove(websocket_connection)
-
-    async def broadcast(self, message: dict, chat_room_id: int):
-        for connection in self.active_connections[chat_room_id]:
-            await self.send_personal_message(connection, message)
-
-    async def send_personal_message(self, websocket_connection: WebSocketConnection, message: dict):
-        await websocket_connection.websocket.send_json(message)
-
-
-chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
 
 
 class MessagesService:
@@ -68,14 +31,12 @@ class MessagesService:
         await self.db_repository.commit()
         await self.db_repository.refresh(created_message)
         message_id = created_message.id
-        files_service = FilesService(self.db_repository)
+        files_service = FilesService(self.db_repository, MessagePhoto)
         for file in files:
-            await files_service.create_object_file(MessagePhoto, file, message_id=message_id)
+            await files_service.create_object_file(file, message_id=message_id)
         self.db_repository.db_query = select(Message).options(joinedload(Message.photos))
         created_message = await self.db_repository.get_one(Message.id == message_id)
-        await self._broadcast_message_to_chat_room(
-            self.chat_room_id, MessagesActionTypeEnum.CREATED.value, ListMessagesSchema.from_orm(created_message).dict()
-        )
+        await message_created_event(created_message)
         return created_message
 
     async def update_message(self, message: Message, **kwargs) -> Message:
@@ -84,17 +45,29 @@ class MessagesService:
         updated_message = await self.db_repository.update_object(message, **kwargs)
         await self.db_repository.commit()
         await self.db_repository.refresh(updated_message)
-        await self._broadcast_message_to_chat_room(
-            self.chat_room_id, MessagesActionTypeEnum.UPDATED.value, ListMessagesSchema.from_orm(updated_message).dict()
-        )
+        await message_updated_event(updated_message)
         return updated_message
 
     async def delete_message(self, message_id: int) -> int:
         await self.db_repository.delete(Message.id == message_id)
-        await self._broadcast_message_to_chat_room(
-            self.chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_id': message_id},
-        )
+        await message_deleted_event(self.chat_room_id, message_id)
         return message_id
 
-    async def _broadcast_message_to_chat_room(self, chat_room_id: int, action: str, message_data: dict):
-        await chat_rooms_websocket_manager.broadcast({'action': action, **message_data}, chat_room_id)
+
+# class MessagesFilesServices:
+#     def __init__(
+#             self,
+#             message: Message,
+#             db_repository: BaseCRUDRepository,
+#             broadcast_message_to_chat_room: bool = True
+#     ):
+#         self.message = message
+#         self.db_repository = db_repository
+#         self.broadcast_message_to_chat_room = broadcast_message_to_chat_room
+#
+#     async def delete_message_file(self, file_id: int):
+#         await self.db_repository.delete(MessagePhoto.id == file_id)
+#         if self.broadcast_message_to_chat_room:
+#             await message_updated_event(updated_message)
+#
+#     async def create_message_
