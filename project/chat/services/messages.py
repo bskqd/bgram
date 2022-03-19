@@ -36,7 +36,7 @@ class MessagesService:
             await files_service.create_object_file(file, message_id=message_id)
         self.db_repository.db_query = select(Message).options(joinedload(Message.photos))
         created_message = await self.db_repository.get_one(Message.id == message_id)
-        await message_created_event(created_message)
+        await message_created_event(created_message, self.db_repository)
         return created_message
 
     async def update_message(self, message: Message, **kwargs) -> Message:
@@ -54,20 +54,20 @@ class MessagesService:
         return message_id
 
 
-# class MessagesFilesServices:
-#     def __init__(
-#             self,
-#             message: Message,
-#             db_repository: BaseCRUDRepository,
-#             broadcast_message_to_chat_room: bool = True
-#     ):
-#         self.message = message
-#         self.db_repository = db_repository
-#         self.broadcast_message_to_chat_room = broadcast_message_to_chat_room
-#
-#     async def delete_message_file(self, file_id: int):
-#         await self.db_repository.delete(MessagePhoto.id == file_id)
-#         if self.broadcast_message_to_chat_room:
-#             await message_updated_event(updated_message)
-#
-#     async def create_message_
+class MessagesFilesServices:
+    def __init__(self, message_id: int, message_file_id: int, db_repository: BaseCRUDRepository):
+        self.message_id = message_id
+        self.message_file_id = message_file_id
+        self.db_repository = db_repository
+
+    async def change_message_file(self, replacement_file: UploadFile) -> MessagePhoto:
+        new_message_file: MessagePhoto = await FilesService(
+            self.db_repository,
+            MessagePhoto
+        ).change_file(self.message_file_id, replacement_file)
+        await message_updated_event(self.message_id, self.db_repository)
+        return new_message_file
+
+    async def delete_message_file(self):
+        await FilesService(self.db_repository, MessagePhoto).delete_file_object(self.message_file_id)
+        await message_updated_event(self.message_id, self.db_repository)

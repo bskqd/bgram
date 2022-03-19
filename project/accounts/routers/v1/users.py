@@ -1,9 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, UploadFile, File
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
@@ -12,7 +11,6 @@ from accounts.schemas import users as user_schemas
 from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
 from database.repository import SQLAlchemyCRUDRepository
-from mixins import dependencies as mixins_dependencies
 from mixins import views as mixins_views
 from mixins.services.files import FilesService
 
@@ -21,8 +19,6 @@ router = APIRouter()
 
 @cbv(router)
 class UserView(mixins_views.AbstractView):
-    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
-
     def get_db_query(self) -> Select:
         return select(
             User

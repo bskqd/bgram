@@ -2,6 +2,7 @@ from abc import ABC
 from typing import Optional
 
 from fastapi import Request, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from accounts.models import User
@@ -15,11 +16,12 @@ class AbstractView(ABC):
     """
     request: Request = Depends(mixins_dependencies.get_request)
     request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
     db_query = None
     pagination_class = None
 
     def get_db_query(self, *args) -> Select:
-        if hasattr(self, 'db_query'):
+        if self.db_query is not None:
             return self.db_query
         raise HTTPException(status_code=400, detail=f'Default db query for {self.__class__} is not specified')
 

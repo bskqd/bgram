@@ -10,16 +10,14 @@ from sqlalchemy.sql import Select
 import chat.dependencies.messages
 from accounts.models import User
 from chat.models import Message, MessagePhoto
-from chat.permissions.messages import UserChatRoomMessagingPermissions
+from chat.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
-from chat.services.messages import MessagesService
+from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views, dependencies as mixins_dependencies
 from mixins.pagination import DefaultPaginationClass
-from mixins.permissions import UserIsAuthenticatedPermission
 from mixins.schemas import FilesSchema
-from mixins.services.files import FilesService
 
 router = APIRouter()
 
@@ -48,11 +46,9 @@ async def chat_websocket_endpoint(
 
 @cbv(router)
 class MessagesView(mixins_views.AbstractView):
-    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
 
     async def check_permissions(self, chat_room_id: int, message_id: Optional[int] = None):
-        await UserIsAuthenticatedPermission(self.request_user).check_permissions()
         await UserChatRoomMessagingPermissions(
             request_user=self.request_user,
             chat_room_id=chat_room_id,
@@ -106,13 +102,28 @@ class MessagesView(mixins_views.AbstractView):
         await MessagesService(db_repository, chat_room_id).delete_message(message_id)
         return {'detail': 'success'}
 
-    @router.patch('/message_photos/{message_photo_id}', response_model=FilesSchema)
-    async def replace_message_photo(self, message_photo_id: int, file: UploadFile) -> dict:
-        db_repository = SQLAlchemyCRUDRepository(MessagePhoto, self.db_session)
-        return await FilesService(db_repository, MessagePhoto).change_file(message_photo_id, file)
 
-    @router.delete('/message_photos/{message_photo_id}')
-    async def delete_message_photo(self, message_photo_id: int) -> dict:
-        db_repository = SQLAlchemyCRUDRepository(MessagePhoto, self.db_session)
-        await FilesService(db_repository, MessagePhoto).delete_file_object(message_photo_id)
-        return {'status': 'success'}
+@router.patch('/message/{message_id}/message_files/{message_file_id}', response_model=FilesSchema)
+async def replace_message_photo(
+        message_id: int,
+        message_file_id: int,
+        file: UploadFile,
+        db_session: AsyncSession = Depends(mixins_dependencies.db_session),
+        request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+) -> dict:
+    db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
+    await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()
+    return await MessagesFilesServices(message_id, message_file_id, db_repository).change_message_file(file)
+
+
+@router.delete('/message/{message_id}/message_files/{message_file_id}')
+async def delete_message_photo(
+        message_id: int,
+        message_file_id: int,
+        db_session: AsyncSession = Depends(mixins_dependencies.db_session),
+        request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+) -> dict:
+    db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
+    await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()
+    await MessagesFilesServices(message_id, message_file_id, db_repository).delete_message_file()
+    return {'status': 'success'}

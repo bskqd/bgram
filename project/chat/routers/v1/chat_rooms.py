@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
@@ -11,7 +10,7 @@ from chat.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetai
                                      ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
 from database.repository import SQLAlchemyCRUDRepository
-from mixins import views as mixins_views, dependencies as mixins_dependencies
+from mixins import views as mixins_views
 from mixins.pagination import DefaultPaginationClass
 from mixins.permissions import UserIsAuthenticatedPermission
 
@@ -20,7 +19,6 @@ router = APIRouter()
 
 @cbv(router)
 class ChatRoomView(mixins_views.AbstractView):
-    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
     pagination_class = DefaultPaginationClass
 
     async def check_permissions(self):
