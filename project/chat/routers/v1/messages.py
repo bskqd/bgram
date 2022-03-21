@@ -29,7 +29,8 @@ async def chat_websocket_endpoint(
         request_user: User = Depends(chat.dependencies.messages.get_request_user),
         db_session: AsyncSession = Depends(mixins_dependencies.db_session)
 ):
-    permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_session)
+    db_repository = SQLAlchemyCRUDRepository(Message, db_session)
+    permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_repository)
     try:
         await permissions.check_permissions()
     except HTTPException:
@@ -48,11 +49,16 @@ async def chat_websocket_endpoint(
 class MessagesView(mixins_views.AbstractView):
     pagination_class = DefaultPaginationClass
 
-    async def check_permissions(self, chat_room_id: int, message_id: Optional[int] = None):
+    async def check_permissions(
+            self,
+            chat_room_id: int,
+            db_repository: SQLAlchemyCRUDRepository,
+            message_id: Optional[int] = None
+    ):
         await UserChatRoomMessagingPermissions(
             request_user=self.request_user,
             chat_room_id=chat_room_id,
-            db_session=self.db_session,
+            db_repository=db_repository,
             request=self.request,
             message_id=message_id,
         ).check_permissions()
@@ -64,8 +70,8 @@ class MessagesView(mixins_views.AbstractView):
 
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
-        await self.check_permissions(chat_room_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
+        await self.check_permissions(chat_room_id, db_repository)
         return await self.get_paginated_response(db_repository, self.get_db_query(chat_room_id))
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
@@ -75,8 +81,8 @@ class MessagesView(mixins_views.AbstractView):
             text: str = Form(...),
             files: Optional[List[UploadFile]] = None
     ):
-        await self.check_permissions(chat_room_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
+        await self.check_permissions(chat_room_id, db_repository)
         return await MessagesService(db_repository, chat_room_id).create_message(
             text, files=files, author_id=self.request_user.id,
         )
@@ -88,8 +94,9 @@ class MessagesView(mixins_views.AbstractView):
             message_id: int,
             message_data: UpdateMessageSchema
     ):
-        await self.check_permissions(chat_room_id, message_id=message_id)
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session, db_query=self.get_db_query(chat_room_id))
+        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
+        await self.check_permissions(chat_room_id, db_repository, message_id=message_id)
+        db_repository.db_query = self.get_db_query(chat_room_id)
         message = await db_repository.get_one(Message.id == message_id)
         return await MessagesService(db_repository, chat_room_id).update_message(
             message, **message_data.dict(exclude_unset=True)
@@ -97,8 +104,8 @@ class MessagesView(mixins_views.AbstractView):
 
     @router.delete('/chat_rooms/{chat_room_id}/messages/{message_id}')
     async def delete_message_view(self, chat_room_id: int, message_id: int):
-        await self.check_permissions(chat_room_id, message_id=message_id)
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
+        await self.check_permissions(chat_room_id, db_repository, message_id=message_id)
         await MessagesService(db_repository, chat_room_id).delete_message(message_id)
         return {'detail': 'success'}
 
