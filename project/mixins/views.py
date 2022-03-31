@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, Type
 
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,7 @@ from sqlalchemy.sql import Select
 from accounts.models import User
 from database.repository import BaseCRUDRepository
 from mixins import dependencies as mixins_dependencies
+from mixins.filters import FilterSet
 
 
 class AbstractView(ABC):
@@ -19,11 +20,17 @@ class AbstractView(ABC):
     db_session: AsyncSession = Depends(mixins_dependencies.db_session)
     db_query = None
     pagination_class = None
+    filterset_class: Optional[Type[FilterSet]] = None
 
     def get_db_query(self, *args) -> Select:
         if self.db_query is not None:
             return self.db_query
         raise HTTPException(status_code=400, detail=f'Default db query for {self.__class__} is not specified')
+
+    def filter_db_query(self, db_query: Select) -> Select:
+        if self.filterset_class:
+            return self.filterset_class(db_query=db_query, request=self.request).filter_db_query()
+        raise HTTPException(status_code=400, detail=f'Filterset class for {self.__class__} is not specified')
 
     async def get_paginated_response(
             self,
@@ -31,9 +38,8 @@ class AbstractView(ABC):
             db_query: Select,
             **kwargs
     ) -> dict:
-        pagintion_class = self.pagination_class
-        if pagintion_class:
-            return await pagintion_class(
+        if self.pagination_class:
+            return await self.pagination_class(
                 self.request,
                 db_repository,
                 **kwargs
