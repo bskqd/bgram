@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from accounts.routers.v1 import authorization, users
+from accounts.api.v1.routers import users, authorization
 
 router = APIRouter()
 

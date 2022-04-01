@@ -10,8 +10,8 @@ from sqlalchemy.sql import Select
 import chat.dependencies.messages
 from accounts.models import User
 from chat.models import Message, MessagePhoto
-from chat.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
-from chat.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
+from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
+from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository

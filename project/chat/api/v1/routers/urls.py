@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from chat.routers.v1 import chat_rooms, messages
+from chat.api.v1.routers import chat_rooms, messages
 
 router = APIRouter()
 

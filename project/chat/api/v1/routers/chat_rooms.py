@@ -6,8 +6,8 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import ChatRoom, chatroom_members_association_table
-from chat.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
-                                     ChatRoomUpdateSchema)
+from chat.api.v1.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
+                                            ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views

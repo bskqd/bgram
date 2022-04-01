@@ -5,7 +5,8 @@ from sqlalchemy import select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.models import User, EmailConfirmationToken
-from accounts.schemas import users as user_schemas, authorization as authorization_schemas
+from accounts.api.v1.schemas import authorization as authorization_schemas
+from accounts.api.v1.schemas import users as user_schemas
 from accounts.services.authorization import create_email_confirmation_token
 from accounts.services.users import UserService
 from core.config import settings

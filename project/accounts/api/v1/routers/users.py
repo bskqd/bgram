@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
-from accounts.filters.users import UsersFilterSet
+from accounts.api.v1.filters.users import UsersFilterSet
+from accounts.api.v1.schemas import users as user_schemas
 from accounts.models import User, UserPhoto
-from accounts.schemas import users as user_schemas
 from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
 from database.repository import SQLAlchemyCRUDRepository

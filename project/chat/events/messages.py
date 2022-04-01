@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
-from chat.schemas.messages import ListMessagesSchema
+from chat.api.v1.schemas.messages import ListMessagesSchema
 from chat.websockets.chat import chat_rooms_websocket_manager
 from database.repository import BaseCRUDRepository
 
