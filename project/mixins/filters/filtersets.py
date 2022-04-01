@@ -22,7 +22,9 @@ class FilterSetMetaclass(type):
             raise AttributeError('FilterSet must declare model_class attribute')
 
         filters = {
-            filter_name: cls.add_model_class_to_filter(model_class=model_class, filter_instance=attrs.pop(filter_name))
+            filter_name: cls.modify_filter_attributes(
+                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class
+            )
             for filter_name, filter_instance in list(attrs.items())
             if isinstance(filter_instance, BaseFilter)
         }
@@ -37,7 +39,9 @@ class FilterSetMetaclass(type):
             return name
 
         base_filters = {
-            visit(filter_name): cls.add_model_class_to_filter(model_class=model_class, filter_instance=filter_instance)
+            visit(filter_name): cls.modify_filter_attributes(
+                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class
+            )
             for base in bases if hasattr(base, 'filters')
             for filter_name, filter_instance in base.filters.items() if filter_name not in known
         }
@@ -46,8 +50,14 @@ class FilterSetMetaclass(type):
         return OrderedDict(filters)
 
     @classmethod
-    def add_model_class_to_filter(cls, model_class: Type[Base], filter_instance: BaseFilter) -> BaseFilter:
-        if not getattr(filter_instance, 'model_class', None):
+    def modify_filter_attributes(
+            cls,
+            filter_instance: BaseFilter,
+            filter_name: str,
+            model_class: Type[Base]
+    ) -> BaseFilter:
+        setattr(filter_instance, 'name', filter_name)
+        if not filter_instance.model_class:
             setattr(filter_instance, 'model_class', model_class)
         return filter_instance
 

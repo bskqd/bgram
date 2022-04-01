@@ -50,6 +50,7 @@ class BaseFilter:
             lookup_expr: str = '==',
             method_name: Optional[str] = None,
     ):
+        self.name = ''
         self.model_class = model_class
         self.field_name = field_name
         self.lookup_expr = LOOKUP_EXPR_MAPPER.get(lookup_expr)
@@ -87,7 +88,7 @@ class CharFilter(BaseFilter):
     def validate_value(self, value: str) -> str:
         value_length = len(value)
         if self.min_length and value_length < self.min_length:
-            raise HTTPException(status_code=400, detail=f'"{self.field_name}" value is too short')
+            raise HTTPException(status_code=400, detail=f'{self.name} value is too short')
         if self.max_length and value_length > self.max_length:
-            raise HTTPException(status_code=400, detail=f'"{self.field_name}" value is too long')
+            raise HTTPException(status_code=400, detail=f'{self.name} value is too long')
         return value
