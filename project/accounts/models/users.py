@@ -31,7 +31,7 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
 class UserPhoto(PhotoABC):
     __tablename__ = 'users_photos'
 
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('users.id'), index=True)
 
     user = relationship('User', back_populates='photos', cascade='all, delete')
 

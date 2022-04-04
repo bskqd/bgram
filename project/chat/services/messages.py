@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional, Tuple
 
 from fastapi import UploadFile
 from sqlalchemy import select
@@ -22,7 +22,7 @@ class MessagesService:
     async def create_message(
             self,
             text: str,
-            files: Optional[List[UploadFile]] = None,
+            files: Optional[Tuple[UploadFile]] = None,
             author_id: Optional[int] = None,
             **kwargs
     ) -> Message:
@@ -32,9 +32,10 @@ class MessagesService:
         await self.db_repository.refresh(created_message)
         message_id = created_message.id
         files_service = FilesService(self.db_repository, MessagePhoto)
-        for file in files:
-            await files_service.create_object_file(file, message_id=message_id)
-        self.db_repository.db_query = select(Message).options(joinedload(Message.photos))
+        if files:
+            for file in files:
+                await files_service.create_object_file(file, message_id=message_id)
+        self.db_repository.db_query = select(Message).options(joinedload(Message.author), joinedload(Message.photos))
         created_message = await self.db_repository.get_one(Message.id == message_id)
         await message_created_event(created_message, self.db_repository)
         return created_message
@@ -45,7 +46,7 @@ class MessagesService:
         updated_message = await self.db_repository.update_object(message, **kwargs)
         await self.db_repository.commit()
         await self.db_repository.refresh(updated_message)
-        await message_updated_event(updated_message)
+        await message_updated_event(updated_message, self.db_repository)
         return updated_message
 
     async def delete_message(self, message_id: int) -> int:

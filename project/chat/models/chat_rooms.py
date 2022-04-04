@@ -37,7 +37,7 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
 class ChatRoomPhoto(PhotoABC):
     __tablename__ = 'chat_rooms_photos'
 
-    chat_room_id = Column(Integer, ForeignKey('chat_rooms.id'))
+    chat_room_id = Column(Integer, ForeignKey('chat_rooms.id'), index=True)
 
     chat_room = relationship('ChatRoom', back_populates='photos', cascade='all, delete')
 

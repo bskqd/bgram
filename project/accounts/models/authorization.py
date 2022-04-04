@@ -11,6 +11,6 @@ class EmailConfirmationToken(DateTimeABC):
     __tablename__ = 'email_confirmation_tokens'
 
     token = Column(String, primary_key=True, default=generate_token())
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('users.id'), index=True)
 
     user = relationship('User', back_populates='email_confirmation_tokens', lazy='joined', cascade='all, delete')

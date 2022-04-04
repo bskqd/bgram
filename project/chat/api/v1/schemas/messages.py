@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -9,11 +9,20 @@ class UpdateMessageSchema(BaseModel):
     text: str
 
 
+class MessageAuthorSchema(BaseModel):
+    id: int
+    nickname: str
+
+    class Config:
+        orm_mode = True
+
+
 class ListMessagesSchema(PhotosFieldSchemaMixin):
     id: int
     is_edited: bool
     text: str
-    author_id: int
+    author: MessageAuthorSchema
+    replayed_message_id: Optional[int]
 
     class Config:
         orm_mode = True

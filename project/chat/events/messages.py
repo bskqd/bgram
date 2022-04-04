@@ -28,7 +28,9 @@ async def message_updated_event(message: Union[Message, int], db_repository: Bas
 
 async def _get_message(message_id: int, db_repository: BaseCRUDRepository) -> Message:
     db_repository.db_query = select(Message).options(joinedload(Message.photos))
-    return await db_repository.get_one(Message.id == message_id)
+    message = await db_repository.get_one(Message.id == message_id)
+    db_repository.db_query = None
+    return message
 
 
 async def message_deleted_event(chat_room_id: int, message_id: int):

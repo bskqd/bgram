@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form
 from fastapi_utils.cbv import cbv
@@ -9,9 +9,9 @@ from sqlalchemy.sql import Select
 
 import chat.dependencies.messages
 from accounts.models import User
-from chat.models import Message, MessagePhoto
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
+from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository
@@ -64,7 +64,12 @@ class MessagesView(mixins_views.AbstractView):
         ).check_permissions()
 
     def get_db_query(self, chat_room_id: int, *args) -> Select:
-        return select(Message).options(joinedload(Message.photos)).where(
+        return select(
+            Message
+        ).options(
+            joinedload(Message.photos),
+            joinedload(Message.author)
+        ).where(
             Message.chat_room_id == chat_room_id, *args
         ).order_by(-Message.id)
 
@@ -79,7 +84,7 @@ class MessagesView(mixins_views.AbstractView):
             self,
             chat_room_id: int,
             text: str = Form(...),
-            files: Optional[List[UploadFile]] = None
+            files: Optional[Tuple[UploadFile]] = None
     ):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         await self.check_permissions(chat_room_id, db_repository)
