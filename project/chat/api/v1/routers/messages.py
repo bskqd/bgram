@@ -1,6 +1,6 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Body
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,14 +53,14 @@ class MessagesView(mixins_views.AbstractView):
             self,
             chat_room_id: int,
             db_repository: SQLAlchemyCRUDRepository,
-            message_id: Optional[int] = None
+            message_ids: Optional[Union[tuple[int], list[int]]] = None
     ):
         await UserChatRoomMessagingPermissions(
             request_user=self.request_user,
             chat_room_id=chat_room_id,
             db_repository=db_repository,
             request=self.request,
-            message_id=message_id,
+            message_ids=message_ids,
         ).check_permissions()
 
     def get_db_query(self, chat_room_id: int, *args) -> Select:
@@ -107,11 +107,11 @@ class MessagesView(mixins_views.AbstractView):
             message, **message_data.dict(exclude_unset=True)
         )
 
-    @router.delete('/chat_rooms/{chat_room_id}/messages/{message_id}')
-    async def delete_message_view(self, chat_room_id: int, message_id: int):
+    @router.delete('/chat_rooms/{chat_room_id}/messages')
+    async def delete_messages_view(self, chat_room_id: int, message_ids: list[int] = Body(...)):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository, message_id=message_id)
-        await MessagesService(db_repository, chat_room_id).delete_message(message_id)
+        await self.check_permissions(chat_room_id, db_repository, message_ids=message_ids)
+        await MessagesService(db_repository, chat_room_id).delete_messages(message_ids)
         return {'detail': 'success'}
 
 

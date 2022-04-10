@@ -4,7 +4,7 @@ from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from chat.events.messages import message_created_event, message_updated_event, message_deleted_event
+from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessagePhoto
 from database.repository import BaseCRUDRepository
 from mixins.services.files import FilesService
@@ -49,10 +49,11 @@ class MessagesService:
         await message_updated_event(updated_message, self.db_repository)
         return updated_message
 
-    async def delete_message(self, message_id: int) -> int:
-        await self.db_repository.delete(Message.id == message_id)
-        await message_deleted_event(self.chat_room_id, message_id)
-        return message_id
+    async def delete_messages(self, message_ids: list[int]) -> list[int]:
+        await self.db_repository.delete(Message.id.in_(message_ids))
+        await self.db_repository.commit()
+        await messages_deleted_event(self.chat_room_id, message_ids)
+        return message_ids
 
 
 class MessagesFilesServices:

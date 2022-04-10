@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import Request
 from sqlalchemy import select
@@ -21,13 +21,13 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
             chat_room_id: int,
             db_repository: BaseCRUDRepository,
             request: Optional[Request] = None,
-            message_id: Optional[int] = None
+            message_ids: Optional[Union[tuple[int], list[int]]] = None
     ):
         self.request_user = request_user
         self.chat_room_id = chat_room_id
         self.db_repository = db_repository
         self.request = request
-        self.message_id = message_id
+        self.message_ids = message_ids
 
     async def check_permissions(self):
         await UserIsAuthenticatedPermission(self.request_user).check_permissions()
@@ -48,12 +48,12 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
         self.db_repository.db_query = None
 
     async def check_message_author(self):
-        if not self.message_id:
+        if not self.message_ids:
             raise self.permission_denied_exception
         self.db_repository.db_query = select(
             Message
         ).where(
-            Message.id == self.message_id,
+            Message.id.in_(self.message_ids),
             Message.author_id == self.request_user.id
         )
         if not await self.db_repository.exists():

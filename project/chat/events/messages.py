@@ -3,9 +3,9 @@ from typing import Union
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from chat.api.v1.schemas.messages import ListMessagesSchema
 from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
-from chat.api.v1.schemas.messages import ListMessagesSchema
 from chat.websockets.chat import chat_rooms_websocket_manager
 from database.repository import BaseCRUDRepository
 
@@ -33,8 +33,10 @@ async def _get_message(message_id: int, db_repository: BaseCRUDRepository) -> Me
     return message
 
 
-async def message_deleted_event(chat_room_id: int, message_id: int):
-    await broadcast_message_to_chat_room(chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_id': message_id})
+async def messages_deleted_event(chat_room_id: int, message_ids: list[int]):
+    await broadcast_message_to_chat_room(
+        chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_ids': message_ids}
+    )
 
 
 async def broadcast_message_to_chat_room(chat_room_id: int, action: str, message_data: dict):
