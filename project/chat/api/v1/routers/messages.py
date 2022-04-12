@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
-import chat.dependencies.messages
 from accounts.models import User
+from chat.api.dependencies import chat as chat_dependencies
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.models import Message, MessagePhoto
@@ -26,7 +26,7 @@ router = APIRouter()
 async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
-        request_user: User = Depends(chat.dependencies.messages.get_request_user),
+        request_user: User = Depends(chat_dependencies.get_request_user),
         db_session: AsyncSession = Depends(mixins_dependencies.db_session)
 ):
     db_repository = SQLAlchemyCRUDRepository(Message, db_session)
