@@ -100,7 +100,7 @@ class MessagesView(mixins_views.AbstractView):
             message_data: UpdateMessageSchema
     ):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository, message_id=message_id)
+        await self.check_permissions(chat_room_id, db_repository, message_ids=(message_id,))
         db_repository.db_query = self.get_db_query(chat_room_id)
         message = await db_repository.get_one(Message.id == message_id)
         return await MessagesService(db_repository, chat_room_id).update_message(
