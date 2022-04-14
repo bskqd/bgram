@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPExce
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.api.dependencies import chat as chat_dependencies
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
+from chat.api.v1.filters.messages import MessagesFilterSet
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
@@ -48,6 +49,7 @@ async def chat_websocket_endpoint(
 @cbv(router)
 class MessagesView(mixins_views.AbstractView):
     pagination_class = DefaultPaginationClass
+    filterset_class = MessagesFilterSet
 
     async def check_permissions(
             self,
@@ -68,7 +70,7 @@ class MessagesView(mixins_views.AbstractView):
             Message
         ).options(
             joinedload(Message.photos),
-            joinedload(Message.author)
+            contains_eager(Message.author)
         ).where(
             Message.chat_room_id == chat_room_id, *args
         ).order_by(-Message.id)
@@ -76,8 +78,7 @@ class MessagesView(mixins_views.AbstractView):
     @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
     async def list_messages_view(self, chat_room_id: int):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository)
-        return await self.get_paginated_response(db_repository, self.get_db_query(chat_room_id))
+        return await self.get_paginated_response(db_repository, self.filter_db_query(self.get_db_query(chat_room_id)))
 
     @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
     async def create_message_view(
