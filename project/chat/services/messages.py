@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessagePhoto
 from database.repository import BaseCRUDRepository
-from mixins.services.files import FilesService
+from core.services.files import FilesService
 
 
 class MessagesService:

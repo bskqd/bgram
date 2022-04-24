@@ -7,16 +7,15 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from database.repository import BaseCRUDRepository
-from mixins import dependencies as mixins_dependencies
 
 
 class AbstractView(ABC):
     """
     Abstract class for views that support CRUD operations.
     """
-    request: Request = Depends(mixins_dependencies.get_request)
-    request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
-    db_session: AsyncSession = Depends(mixins_dependencies.db_session)
+    request: Request = Depends()
+    request_user: Optional[User] = Depends()
+    db_session: AsyncSession = Depends()
     db_query = None
     pagination_class = None
     filterset_class = None

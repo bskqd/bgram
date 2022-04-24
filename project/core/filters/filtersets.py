@@ -5,7 +5,7 @@ from fastapi import Request, HTTPException
 from sqlalchemy.sql import Select
 
 from database.base import Base
-from mixins.filters.filters import BaseFilter
+from core.filters.filters import BaseFilter
 
 __all__ = ['FilterSetMetaclass', 'BaseFilterSet', 'FilterSet']
 

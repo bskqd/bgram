@@ -11,8 +11,8 @@ from chat.api.v1.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRo
 from chat.services.chat_rooms import ChatRoomService
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views
-from mixins.pagination import DefaultPaginationClass
-from mixins.permissions import UserIsAuthenticatedPermission
+from core.pagination import DefaultPaginationClass
+from core.permissions import UserIsAuthenticatedPermission
 
 router = APIRouter()
 

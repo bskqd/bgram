@@ -16,8 +16,8 @@ from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from database.repository import SQLAlchemyCRUDRepository
-from mixins import views as mixins_views, dependencies as mixins_dependencies
-from mixins.pagination import DefaultPaginationClass
+from mixins import views as mixins_views
+from core.pagination import DefaultPaginationClass
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -28,7 +28,7 @@ async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
         request_user: User = Depends(chat_dependencies.get_request_user),
-        db_session: AsyncSession = Depends(mixins_dependencies.db_session)
+        db_session: AsyncSession = Depends()
 ):
     db_repository = SQLAlchemyCRUDRepository(Message, db_session)
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_repository)
@@ -121,8 +121,8 @@ async def replace_message_photo(
         message_id: int,
         message_file_id: int,
         file: UploadFile,
-        db_session: AsyncSession = Depends(mixins_dependencies.db_session),
-        request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+        db_session: AsyncSession = Depends(),
+        request_user: Optional[User] = Depends()
 ) -> dict:
     db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
     await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()
@@ -133,8 +133,8 @@ async def replace_message_photo(
 async def delete_message_photo(
         message_id: int,
         message_file_id: int,
-        db_session: AsyncSession = Depends(mixins_dependencies.db_session),
-        request_user: Optional[User] = Depends(mixins_dependencies.get_request_user)
+        db_session: AsyncSession = Depends(),
+        request_user: Optional[User] = Depends()
 ) -> dict:
     db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
     await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()

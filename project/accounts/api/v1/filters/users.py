@@ -1,7 +1,7 @@
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from mixins.filters import CharFilter, FilterSet, icontains
+from core.filters import CharFilter, FilterSet, icontains
 from sqlalchemy import or_
 
 

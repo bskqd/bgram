@@ -3,7 +3,7 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import Message
-from mixins.filters import CharFilter, FilterSet, icontains
+from core.filters import CharFilter, FilterSet, icontains
 
 
 class MessagesFilterSet(FilterSet):

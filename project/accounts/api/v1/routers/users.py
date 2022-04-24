@@ -13,7 +13,7 @@ from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
 from database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views
-from mixins.services.files import FilesService
+from core.services.files import FilesService
 
 router = APIRouter()
 
