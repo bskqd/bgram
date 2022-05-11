@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from accounts.models import User
 from chat.models import chatroom_members_association_table, Message, MessagePhoto
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 from core import permissions as mixins_permissions
 from core.permissions import UserIsAuthenticatedPermission
 

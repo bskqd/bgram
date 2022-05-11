@@ -11,7 +11,7 @@ from accounts.services.authorization import create_email_confirmation_token
 from accounts.services.users import UserService
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
-from database.repository import SQLAlchemyCRUDRepository
+from core.database.repository import SQLAlchemyCRUDRepository
 from notifications.background_tasks.email import send_email
 
 router = APIRouter()

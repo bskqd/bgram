@@ -6,6 +6,8 @@ from fastapi_mail import ConnectionConfig
 from passlib.context import CryptContext
 from pydantic import BaseSettings
 
+import core.contrib.redis as redis_contrib
+
 load_dotenv()
 
 
@@ -38,6 +40,8 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int = 1440
     JWT_ACCESS_TOKEN_TYPE: str = 'access_token'
     JWT_REFRESH_TOKEN_TYPE: str = 'refresh_token'
+
+    REDIS_HOST_URL: str = redis_contrib.REDIS_HOST_URL
 
     PWD_CONTEXT: CryptContext = CryptContext(schemes=['bcrypt'], deprecated='auto')
 

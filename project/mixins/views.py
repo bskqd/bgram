@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 
 
 class AbstractView(ABC):

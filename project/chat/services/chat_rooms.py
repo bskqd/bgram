@@ -5,7 +5,7 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import ChatRoom
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 
 
 class ChatRoomService:

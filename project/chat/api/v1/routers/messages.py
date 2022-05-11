@@ -15,9 +15,10 @@ from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema
 from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
-from database.repository import SQLAlchemyCRUDRepository
-from mixins import views as mixins_views
+from core.dependencies import EventPublisher, EventReceiver
 from core.pagination import DefaultPaginationClass
+from core.database.repository import SQLAlchemyCRUDRepository
+from mixins import views as mixins_views
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -28,7 +29,8 @@ async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
         request_user: User = Depends(chat_dependencies.get_request_user),
-        db_session: AsyncSession = Depends()
+        db_session: AsyncSession = Depends(),
+        event_receiver: EventReceiver = Depends(),
 ):
     db_repository = SQLAlchemyCRUDRepository(Message, db_session)
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_repository)
@@ -43,7 +45,6 @@ async def chat_websocket_endpoint(
         raise WebSocketDisconnect
     except WebSocketDisconnect:
         await chat_rooms_websocket_manager.disconnect(websocket_connection)
-        await chat_rooms_websocket_manager.broadcast({'Client': 'has left the chat'}, chat_room_id)
 
 
 @cbv(router)
@@ -85,11 +86,12 @@ class MessagesView(mixins_views.AbstractView):
             self,
             chat_room_id: int,
             text: str = Form(...),
-            files: Optional[Tuple[UploadFile]] = None
+            files: Optional[Tuple[UploadFile]] = None,
+            event_publisher: EventPublisher = Depends(),
     ):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         await self.check_permissions(chat_room_id, db_repository)
-        return await MessagesService(db_repository, chat_room_id).create_message(
+        return await MessagesService(db_repository, chat_room_id, event_publisher).create_message(
             text, files=files, author_id=self.request_user.id,
         )
 
@@ -98,21 +100,27 @@ class MessagesView(mixins_views.AbstractView):
             self,
             chat_room_id: int,
             message_id: int,
-            message_data: UpdateMessageSchema
+            message_data: UpdateMessageSchema,
+            event_publisher: EventPublisher = Depends(),
     ):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         await self.check_permissions(chat_room_id, db_repository, message_ids=(message_id,))
         db_repository.db_query = self.get_db_query(chat_room_id)
         message = await db_repository.get_one(Message.id == message_id)
-        return await MessagesService(db_repository, chat_room_id).update_message(
+        return await MessagesService(db_repository, chat_room_id, event_publisher).update_message(
             message, **message_data.dict(exclude_unset=True)
         )
 
     @router.delete('/chat_rooms/{chat_room_id}/messages')
-    async def delete_messages_view(self, chat_room_id: int, message_ids: list[int] = Body(...)):
+    async def delete_messages_view(
+            self,
+            chat_room_id: int,
+            message_ids: list[int] = Body(...),
+            event_publisher: EventPublisher = Depends(),
+    ):
         db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
         await self.check_permissions(chat_room_id, db_repository, message_ids=message_ids)
-        await MessagesService(db_repository, chat_room_id).delete_messages(message_ids)
+        await MessagesService(db_repository, chat_room_id, event_publisher).delete_messages(message_ids)
         return {'detail': 'success'}
 
 
@@ -122,11 +130,17 @@ async def replace_message_photo(
         message_file_id: int,
         file: UploadFile,
         db_session: AsyncSession = Depends(),
-        request_user: Optional[User] = Depends()
+        request_user: Optional[User] = Depends(),
+        event_publisher: EventPublisher = Depends(),
 ) -> dict:
     db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
     await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()
-    return await MessagesFilesServices(message_id, message_file_id, db_repository).change_message_file(file)
+    return await MessagesFilesServices(
+        message_id,
+        message_file_id,
+        db_repository,
+        event_publisher
+    ).change_message_file(file)
 
 
 @router.delete('/message/{message_id}/message_files/{message_file_id}')
@@ -134,9 +148,10 @@ async def delete_message_photo(
         message_id: int,
         message_file_id: int,
         db_session: AsyncSession = Depends(),
-        request_user: Optional[User] = Depends()
+        request_user: Optional[User] = Depends(),
+        event_publisher: EventPublisher = Depends(),
 ) -> dict:
     db_repository = SQLAlchemyCRUDRepository(MessagePhoto, db_session)
     await UserMessageFilesPermissions(request_user, message_file_id, db_repository).check_permissions()
-    await MessagesFilesServices(message_id, message_file_id, db_repository).delete_message_file()
+    await MessagesFilesServices(message_id, message_file_id, db_repository, event_publisher).delete_message_file()
     return {'status': 'success'}

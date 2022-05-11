@@ -4,7 +4,7 @@ from typing import Type, Optional
 from fastapi import Request, HTTPException
 from sqlalchemy.sql import Select
 
-from database.base import Base
+from core.database.base import Base
 from core.filters.filters import BaseFilter
 
 __all__ = ['FilterSetMetaclass', 'BaseFilterSet', 'FilterSet']

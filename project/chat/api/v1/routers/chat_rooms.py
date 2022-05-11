@@ -9,7 +9,7 @@ from chat.models import ChatRoom, chatroom_members_association_table
 from chat.api.v1.schemas.chat_rooms import (PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema,
                                             ChatRoomUpdateSchema)
 from chat.services.chat_rooms import ChatRoomService
-from database.repository import SQLAlchemyCRUDRepository
+from core.database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views
 from core.pagination import DefaultPaginationClass
 from core.permissions import UserIsAuthenticatedPermission

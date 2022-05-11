@@ -11,7 +11,7 @@ from accounts.api.v1.schemas import users as user_schemas
 from accounts.models import User, UserPhoto
 from accounts.services.users import UserService
 from chat.models import ChatRoom, chatroom_members_association_table
-from database.repository import SQLAlchemyCRUDRepository
+from core.database.repository import SQLAlchemyCRUDRepository
 from mixins import views as mixins_views
 from core.services.files import FilesService
 

@@ -4,7 +4,7 @@ from typing import Tuple
 from fastapi import Request
 from sqlalchemy.sql import Select
 
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 
 
 class DefaultPaginationClass:

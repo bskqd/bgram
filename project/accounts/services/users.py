@@ -4,7 +4,7 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from accounts.utils.users import hash_password
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 
 
 class UserService:
