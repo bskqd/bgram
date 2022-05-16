@@ -63,23 +63,22 @@ class FilterSetMetaclass(type):
 
 
 class BaseFilterSet:
-    def __init__(self, db_query: Select, request: Request):
-        self.db_query = db_query
+    def __init__(self, request: Request):
         self.request = request
         self.query_params = request.query_params
 
-    def filter_db_query(self):
+    def filter_db_query(self, db_query: Select):
         for query_param_name, query_param_value in self.query_params.items():
             filter_instance: Optional[BaseFilter] = self.filters.get(query_param_name)
             if not filter_instance:
                 continue
             if filter_instance.method_name:
-                self.db_query = self.filter_db_query_by_method(filter_instance, query_param_value)
+                db_query = self.filter_db_query_by_method(db_query, filter_instance, query_param_value)
                 continue
-            self.db_query = filter_instance.filter(self.db_query, query_param_value)
-        return self.db_query
+            db_query = filter_instance.filter(db_query, query_param_value)
+        return db_query
 
-    def filter_db_query_by_method(self, filter_instance: BaseFilter, value: str) -> Select:
+    def filter_db_query_by_method(self, db_query: Select, filter_instance: BaseFilter, value: str) -> Select:
         method = getattr(self, filter_instance.method_name, None)
         if method is None:
             raise HTTPException(
@@ -87,7 +86,7 @@ class BaseFilterSet:
                 detail=f'{filter_instance.__class__.__name__} does not have {filter_instance.method_name} method'
             )
         value = filter_instance.validate_value(value)
-        return method(self.db_query, value)
+        return method(db_query, value)
 
 
 class FilterSet(BaseFilterSet, metaclass=FilterSetMetaclass):

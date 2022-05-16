@@ -1,7 +1,6 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Body
-from fastapi_utils.cbv import cbv
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Body, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, contains_eager
@@ -9,16 +8,14 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.api.dependencies import chat as chat_dependencies
+from chat.api.dependencies.messages import get_messages_filterset
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
-from chat.api.v1.filters.messages import MessagesFilterSet
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
-from core.dependencies import EventPublisher, EventReceiver
-from core.pagination import DefaultPaginationClass
 from core.database.repository import SQLAlchemyCRUDRepository
-from mixins import views as mixins_views
+from core.dependencies import EventPublisher, EventReceiver, get_paginator
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -47,81 +44,96 @@ async def chat_websocket_endpoint(
         await chat_rooms_websocket_manager.disconnect(websocket_connection)
 
 
-@cbv(router)
-class MessagesView(mixins_views.AbstractView):
-    pagination_class = DefaultPaginationClass
-    filterset_class = MessagesFilterSet
+def get_messages_db_query(chat_room_id: int, *args) -> Select:
+    return select(
+        Message
+    ).options(
+        joinedload(Message.photos),
+        contains_eager(Message.author)
+    ).join(
+        Message.author
+    ).where(
+        Message.chat_room_id == chat_room_id, *args
+    ).order_by(-Message.id)
 
-    async def check_permissions(
-            self,
-            chat_room_id: int,
-            db_repository: SQLAlchemyCRUDRepository,
-            message_ids: Optional[Union[tuple[int], list[int]]] = None
-    ):
-        await UserChatRoomMessagingPermissions(
-            request_user=self.request_user,
-            chat_room_id=chat_room_id,
-            db_repository=db_repository,
-            request=self.request,
-            message_ids=message_ids,
-        ).check_permissions()
 
-    def get_db_query(self, chat_room_id: int, *args) -> Select:
-        return select(
-            Message
-        ).options(
-            joinedload(Message.photos),
-            contains_eager(Message.author)
-        ).where(
-            Message.chat_room_id == chat_room_id, *args
-        ).order_by(-Message.id)
+@router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
+async def list_messages_view(
+        chat_room_id: int,
+        db_session: AsyncSession = Depends(),
+        filterset=Depends(get_messages_filterset),
+        paginator=Depends(get_paginator),
+):
+    db_repository = SQLAlchemyCRUDRepository(Message, db_session)
+    return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(chat_room_id)), db_repository)
 
-    @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
-    async def list_messages_view(self, chat_room_id: int):
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        return await self.get_paginated_response(db_repository, self.filter_db_query(self.get_db_query(chat_room_id)))
 
-    @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
-    async def create_message_view(
-            self,
-            chat_room_id: int,
-            text: str = Form(...),
-            files: Optional[Tuple[UploadFile]] = None,
-            event_publisher: EventPublisher = Depends(),
-    ):
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository)
-        return await MessagesService(db_repository, chat_room_id, event_publisher).create_message(
-            text, files=files, author_id=self.request_user.id,
-        )
+@router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
+async def create_message_view(
+        chat_room_id: int,
+        request: Request,
+        text: str = Form(...),
+        files: Optional[Tuple[UploadFile]] = None,
+        request_user: User = Depends(),
+        db_session: AsyncSession = Depends(),
+        event_publisher: EventPublisher = Depends(),
+):
+    db_repository = SQLAlchemyCRUDRepository(Message, db_session)
+    await UserChatRoomMessagingPermissions(
+        request_user=request_user,
+        chat_room_id=chat_room_id,
+        db_repository=db_repository,
+        request=request,
+    ).check_permissions()
+    return await MessagesService(db_repository, chat_room_id, event_publisher).create_message(
+        text, files=files, author_id=request_user.id,
+    )
 
-    @router.patch('/chat_rooms/{chat_room_id}/messages/{message_id}', response_model=ListMessagesSchema)
-    async def update_message_view(
-            self,
-            chat_room_id: int,
-            message_id: int,
-            message_data: UpdateMessageSchema,
-            event_publisher: EventPublisher = Depends(),
-    ):
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository, message_ids=(message_id,))
-        db_repository.db_query = self.get_db_query(chat_room_id)
-        message = await db_repository.get_one(Message.id == message_id)
-        return await MessagesService(db_repository, chat_room_id, event_publisher).update_message(
-            message, **message_data.dict(exclude_unset=True)
-        )
 
-    @router.delete('/chat_rooms/{chat_room_id}/messages')
-    async def delete_messages_view(
-            self,
-            chat_room_id: int,
-            message_ids: list[int] = Body(...),
-            event_publisher: EventPublisher = Depends(),
-    ):
-        db_repository = SQLAlchemyCRUDRepository(Message, self.db_session)
-        await self.check_permissions(chat_room_id, db_repository, message_ids=message_ids)
-        await MessagesService(db_repository, chat_room_id, event_publisher).delete_messages(message_ids)
-        return {'detail': 'success'}
+@router.patch('/chat_rooms/{chat_room_id}/messages/{message_id}', response_model=ListMessagesSchema)
+async def update_message_view(
+        chat_room_id: int,
+        message_id: int,
+        request: Request,
+        message_data: UpdateMessageSchema,
+        request_user: User = Depends(),
+        db_session: AsyncSession = Depends(),
+        event_publisher: EventPublisher = Depends(),
+):
+    db_repository = SQLAlchemyCRUDRepository(Message, db_session)
+    await UserChatRoomMessagingPermissions(
+        request_user=request_user,
+        chat_room_id=chat_room_id,
+        db_repository=db_repository,
+        request=request,
+        message_ids=(message_id,),
+    ).check_permissions()
+    db_repository.db_query = get_messages_db_query(chat_room_id)
+    message = await db_repository.get_one(Message.id == message_id)
+    return await MessagesService(db_repository, chat_room_id, event_publisher).update_message(
+        message, **message_data.dict(exclude_unset=True)
+    )
+
+
+@router.delete('/chat_rooms/{chat_room_id}/messages')
+async def delete_messages_view(
+        chat_room_id: int,
+        request: Request,
+        message_ids: list[int] = Body(...),
+        request_user: User = Depends(),
+        db_session: AsyncSession = Depends(),
+        event_publisher: EventPublisher = Depends(),
+):
+    db_repository = SQLAlchemyCRUDRepository(Message, db_session)
+    await UserChatRoomMessagingPermissions(
+        request_user=request_user,
+        chat_room_id=chat_room_id,
+        db_repository=db_repository,
+        request=request,
+        message_ids=message_ids,
+    ).check_permissions()
+    await MessagesService(db_repository, chat_room_id, event_publisher).delete_messages(message_ids)
+    return {'detail': 'success'}
 
 
 @router.patch('/message/{message_id}/message_files/{message_file_id}', response_model=FilesSchema)

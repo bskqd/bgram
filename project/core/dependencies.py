@@ -7,6 +7,7 @@ from fastapi import Request
 from accounts.models import User
 from core.contrib.redis import redis_client
 from core.database.base import DatabaseSession
+from core.pagination import DefaultPaginationClass
 
 
 class EventPublisher:
@@ -22,10 +23,6 @@ async def db_session() -> DatabaseSession:
         yield session
 
 
-async def get_request(request: Request) -> Request:
-    return request
-
-
 async def get_request_user(request: Request) -> Optional[User]:
     return request.state.user
 
@@ -36,3 +33,7 @@ async def get_event_publisher() -> Redis:
 
 async def get_event_receiver() -> PubSub:
     return redis_client.pubsub()
+
+
+async def get_paginator(request: Request) -> DefaultPaginationClass:
+    return DefaultPaginationClass(request=request)
