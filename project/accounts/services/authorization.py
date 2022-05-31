@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.models import User, EmailConfirmationToken
-from database.repository import SQLAlchemyCRUDRepository
+from core.database.repository import SQLAlchemyCRUDRepository
 
 
 async def create_email_confirmation_token(user: User, db_session: AsyncSession) -> EmailConfirmationToken:

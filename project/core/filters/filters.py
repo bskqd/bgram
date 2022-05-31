@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 
-from database.base import Base
+from core.database.base import Base
 
 __all__ = [
     'BaseFilter', 'IntegerFilter', 'CharFilter', 'like', 'ilike', 'contains', 'icontains',

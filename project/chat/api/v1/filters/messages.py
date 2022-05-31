@@ -11,6 +11,6 @@ class MessagesFilterSet(FilterSet):
     search = CharFilter(min_length=3, method_name='universal_search')
 
     def universal_search(self, db_query: Select, value: str) -> Select:
-        return db_query.join(Message.author).where(
+        return db_query.where(
             or_(icontains(Message.text, value), icontains(User.nickname, value))
         )

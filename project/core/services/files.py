@@ -6,7 +6,7 @@ from typing import Type, Union
 from fastapi import UploadFile
 
 from core.config import settings
-from database.repository import BaseCRUDRepository
+from core.database.repository import BaseCRUDRepository
 from mixins.models import PhotoABC
 
 
