@@ -12,3 +12,6 @@ python-jose==3.3.0
 flake8==4.0.1
 aioredis==2.0.1
 hiredis==2.0.0
+pydantic==1.9.0
+python-dotenv==0.20.0
+starlette==0.17.1
