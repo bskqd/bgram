@@ -16,11 +16,13 @@ class MessagesService:
             self,
             db_repository: BaseCRUDRepository,
             chat_room_id: Optional[int] = None,
-            event_publisher: Optional[EventPublisher] = None
+            event_publisher: Optional[EventPublisher] = None,
+            files_service: Optional[FilesService] = None,
     ):
         self.db_repository = db_repository
         self.chat_room_id = chat_room_id
         self.event_publisher = event_publisher
+        self.files_service = files_service
 
     async def create_message(
             self,
@@ -34,10 +36,9 @@ class MessagesService:
         await self.db_repository.commit()
         await self.db_repository.refresh(created_message)
         message_id = created_message.id
-        files_service = FilesService(self.db_repository, MessagePhoto)
         if files:
             for file in files:
-                await files_service.create_object_file(file, message_id=message_id)
+                await self.files_service.create_object_file(file, message_id=message_id)
         self.db_repository.db_query = select(Message).options(joinedload(Message.author), joinedload(Message.photos))
         created_message = await self.db_repository.get_one(Message.id == message_id)
         await message_created_event(self.event_publisher, created_message, self.db_repository)

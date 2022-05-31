@@ -1,21 +1,20 @@
 from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Body, Request
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, contains_eager
-from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.api.dependencies import chat as chat_dependencies
 from chat.api.dependencies.messages import get_messages_filterset
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
-from chat.models import Message, MessagePhoto
+from chat.api.v1.selectors.messages import get_messages_db_query
+from chat.models import Message, MessagePhoto, ChatRoom
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from core.database.repository import SQLAlchemyCRUDRepository
 from core.dependencies import EventPublisher, EventReceiver, get_paginator
+from core.services.files import FilesService
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -35,8 +34,9 @@ async def chat_websocket_endpoint(
         await permissions.check_permissions()
     except HTTPException:
         return await websocket.close()
-    websocket_connection = WebSocketConnection(websocket, request_user, chat_room_id)
-    await chat_rooms_websocket_manager.connect(websocket_connection)
+    websocket_connection = WebSocketConnection(websocket, request_user)
+    chat_rooms_db_repository = SQLAlchemyCRUDRepository(ChatRoom, db_session)
+    await chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_db_repository)
     try:
         await websocket.receive()
         raise WebSocketDisconnect
@@ -44,28 +44,19 @@ async def chat_websocket_endpoint(
         await chat_rooms_websocket_manager.disconnect(websocket_connection)
 
 
-def get_messages_db_query(chat_room_id: int, *args) -> Select:
-    return select(
-        Message
-    ).options(
-        joinedload(Message.photos),
-        contains_eager(Message.author)
-    ).join(
-        Message.author
-    ).where(
-        Message.chat_room_id == chat_room_id, *args
-    ).order_by(-Message.id)
-
-
 @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
 async def list_messages_view(
         chat_room_id: int,
+        request: Request,
         db_session: AsyncSession = Depends(),
         filterset=Depends(get_messages_filterset),
         paginator=Depends(get_paginator),
 ):
     db_repository = SQLAlchemyCRUDRepository(Message, db_session)
-    return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(chat_room_id)), db_repository)
+    return await paginator.paginate(
+        filterset.filter_db_query(get_messages_db_query(request, chat_room_id)),
+        db_repository
+    )
 
 
 @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
@@ -85,7 +76,8 @@ async def create_message_view(
         db_repository=db_repository,
         request=request,
     ).check_permissions()
-    return await MessagesService(db_repository, chat_room_id, event_publisher).create_message(
+    files_service = FilesService(db_repository, MessagePhoto)
+    return await MessagesService(db_repository, chat_room_id, event_publisher, files_service).create_message(
         text, files=files, author_id=request_user.id,
     )
 
@@ -108,7 +100,7 @@ async def update_message_view(
         request=request,
         message_ids=(message_id,),
     ).check_permissions()
-    db_repository.db_query = get_messages_db_query(chat_room_id)
+    db_repository.db_query = get_messages_db_query(request, chat_room_id)
     message = await db_repository.get_one(Message.id == message_id)
     return await MessagesService(db_repository, chat_room_id, event_publisher).update_message(
         message, **message_data.dict(exclude_unset=True)

@@ -1,32 +1,17 @@
 from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Depends
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import Select
 
-from accounts.api.v1.schemas import users as user_schemas
 from accounts.api.dependencies.users import get_users_filterset
+from accounts.api.v1.schemas import users as user_schemas
+from accounts.api.v1.selectors.users import get_users_db_query
 from accounts.models import User, UserPhoto
 from accounts.services.users import UserService
-from chat.models import chatroom_members_association_table, ChatRoom
 from core.database.repository import SQLAlchemyCRUDRepository
 from core.services.files import FilesService
 
 router = APIRouter()
-
-
-def get_users_db_query(request_user: User) -> Select:
-    return select(
-        User
-    ).join(
-        chatroom_members_association_table
-    ).options(
-        joinedload(User.chat_rooms).load_only(ChatRoom.id), joinedload(User.photos)
-    ).where(
-        chatroom_members_association_table.c.user_id == request_user.id,
-    )
 
 
 @router.get('/users', response_model=List[user_schemas.UserSchema])

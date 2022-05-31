@@ -2,31 +2,19 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.api.permissions.chat_rooms import ChatRoomPermission
 from chat.api.v1.schemas.chat_rooms import (
     PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema, ChatRoomUpdateSchema,
 )
-from chat.models import ChatRoom, chatroom_members_association_table
+from chat.api.v1.selectors.chat_rooms import get_chat_rooms_db_query
+from chat.models import ChatRoom
 from chat.services.chat_rooms import ChatRoomService
 from core.database.repository import SQLAlchemyCRUDRepository
 from core.dependencies import get_paginator
 
 router = APIRouter()
-
-
-def get_chat_rooms_db_query(request_user: User) -> Select:
-    return select(
-        ChatRoom
-    ).join(
-        chatroom_members_association_table
-    ).options(
-        joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
-    ).where(
-        chatroom_members_association_table.c.user_id == request_user.id
-    )
 
 
 @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)
