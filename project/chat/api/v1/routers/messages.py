@@ -1,6 +1,8 @@
 from typing import Optional, Tuple
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Body, Request
+from fastapi import (
+    APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Request, Query,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.models import User
@@ -111,7 +113,7 @@ async def update_message_view(
 async def delete_messages_view(
         chat_room_id: int,
         request: Request,
-        message_ids: list[int] = Body(...),
+        message_ids: tuple[int] = Query(...),
         request_user: User = Depends(),
         db_session: AsyncSession = Depends(),
         event_publisher: EventPublisher = Depends(),

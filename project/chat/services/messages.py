@@ -53,7 +53,7 @@ class MessagesService:
         await message_updated_event(self.event_publisher, updated_message, self.db_repository)
         return updated_message
 
-    async def delete_messages(self, message_ids: list[int]) -> list[int]:
+    async def delete_messages(self, message_ids: tuple[int]) -> tuple[int]:
         await self.db_repository.delete(Message.id.in_(message_ids))
         await self.db_repository.commit()
         await messages_deleted_event(self.event_publisher, self.chat_room_id, message_ids)

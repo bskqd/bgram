@@ -44,7 +44,7 @@ async def _get_message(message_id: int, db_repository: BaseCRUDRepository) -> Me
     return message
 
 
-async def messages_deleted_event(event_publisher: EventPublisher, chat_room_id: int, message_ids: list[int]):
+async def messages_deleted_event(event_publisher: EventPublisher, chat_room_id: int, message_ids: tuple[int]):
     await broadcast_message_to_chat_room(
         event_publisher, chat_room_id, MessagesActionTypeEnum.DELETED.value, {'message_ids': message_ids}
     )
