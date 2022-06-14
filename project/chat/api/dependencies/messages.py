@@ -1,6 +1,6 @@
 from fastapi import Request
 
-from chat.api.v1.filters.messages import MessagesFilterSet
+from chat.api.filters.messages import MessagesFilterSet
 from core.filters import FilterSet
 
 

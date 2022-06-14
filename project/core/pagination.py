@@ -1,67 +1,97 @@
 import math
+from abc import ABC
 from typing import Tuple
 
 from fastapi import Request
 from sqlalchemy.sql import Select
 
-from core.database.repository import BaseCRUDRepository
+from core.database.base import Base
+
+
+class PaginationDatabaseObjectsRetrieverABC(ABC):
+    async def get_many(self, db_query: Select) -> list[Base]:
+        pass
+
+    async def count(self, db_query: Select) -> int:
+        pass
 
 
 class DefaultPaginationClass:
     def __init__(
             self,
             request: Request,
+            db_objects_retriever: PaginationDatabaseObjectsRetrieverABC,
             page_number_param: str = 'page',
-            page_size_param: str = 'page_size_param'
+            page_size_param: str = 'page_size',
     ):
         self.request = request
+        self.request_query_params = request.query_params
         self.page_number_param = page_number_param
         self.page_size_param = page_size_param
+        self.db_objects_retriever = db_objects_retriever
 
-    async def paginate(self, db_query: Select, db_repository: BaseCRUDRepository,) -> dict:
-        query_params = self.request.query_params
-        page_size: int = int(query_params.get('page_size', 20))
-        current_page: int = int(query_params.get('page', 1))
-        queryset_offset = page_size * (current_page - 1)
-        queryset_limit = page_size * current_page
-        db_repository.db_query = db_query
-        total_db_objects_count = await db_repository.count()
-        db_repository.db_query = db_query.offset(queryset_offset).limit(queryset_limit)
-        queryset = await db_repository.get_many()
-        db_repository.db_query = None
+    async def paginate(self, db_query: Select) -> dict:
+        page_size: int = int(self.request_query_params.get(self.page_size_param, 20))
+        current_page_number: int = int(self.request_query_params.get(self.page_number_param, 1))
+        db_query_offset = page_size * (current_page_number - 1)
+        db_query_limit = page_size * current_page_number
+        total_db_objects_count = await self.db_objects_retriever.count(db_query)
+        db_query = db_query.offset(db_query_offset).limit(db_query_limit)
+        db_objects = await self.db_objects_retriever.get_many(db_query)
         total_pages = math.ceil(total_db_objects_count / page_size)
-        previous_page, next_page = self.get_previous_and_next_pages(
-            current_page, queryset_limit, total_db_objects_count
+        previous_page_url, next_page_url = self.get_previous_and_next_page_urls(
+            current_page_number, db_query_limit, total_db_objects_count
         )
         return {
-            'data': queryset,
+            'data': db_objects,
             'count': total_db_objects_count,
             'total_pages': total_pages,
-            'current_page': current_page,
+            'current_page': current_page_number,
             'page_size': page_size,
-            'next': next_page,
-            'previous': previous_page,
+            'next': next_page_url,
+            'previous': previous_page_url,
         }
 
-    def get_previous_and_next_pages(
+    def get_previous_and_next_page_urls(
             self,
-            current_page: int,
-            queryset_limit: int,
-            total_db_objects_count: int
+            current_page_number: int,
+            db_query_limit: int,
+            total_db_objects_count: int,
     ) -> Tuple[str, str]:
         url = self.request.url
-        url_query_params: str = url.query
-        url_contains_page_param = url_query_params and 'page=' in url_query_params
+        url_contains_page_number_param: bool = bool(self.request_query_params.get(self.page_number_param))
         url = str(url)
-        page_number_param = self.page_number_param
-        previous_page = None if current_page == 1 else url.replace(
-            f'{page_number_param}={current_page}', f'{page_number_param}={current_page - 1}'
-        ) if url_contains_page_param else f'{url}&{page_number_param}={current_page - 1}' if url_query_params else (
-            f'{url}?{page_number_param}={current_page - 1}'
-        )
-        next_page = None if queryset_limit >= total_db_objects_count else url.replace(
-            f'{page_number_param}={current_page}', f'{page_number_param}={current_page + 1}'
-        ) if url_contains_page_param else f'{url}&{page_number_param}={current_page + 1}' if url_query_params else (
-            f'{url}?{page_number_param}={current_page + 1}'
+        previous_page = self.get_previous_page_url(url, current_page_number, url_contains_page_number_param)
+        next_page = self.get_next_page_url(
+            url, current_page_number, url_contains_page_number_param, db_query_limit, total_db_objects_count
         )
         return previous_page, next_page
+
+    def get_previous_page_url(self, url: str, current_page_number: int, url_contains_page_number_param: bool):
+        if current_page_number == 1:
+            return None
+        elif url_contains_page_number_param:
+            return url.replace(
+                f'{self.page_number_param}={current_page_number}', f'{self.page_number_param}={current_page_number - 1}'
+            )
+        elif self.request_query_params:
+            return f'{url}&{self.page_number_param}={current_page_number - 1}'
+        return f'{url}?{self.page_number_param}={current_page_number - 1}'
+
+    def get_next_page_url(
+            self,
+            url: str,
+            current_page_number: int,
+            url_contains_page_number_param: bool,
+            db_query_limit: int,
+            total_db_objects_count: int,
+    ):
+        if db_query_limit >= total_db_objects_count:
+            return None
+        elif url_contains_page_number_param:
+            return url.replace(
+                f'{self.page_number_param}={current_page_number}', f'{self.page_number_param}={current_page_number + 1}'
+            )
+        elif self.request_query_params:
+            return f'{url}&{self.page_number_param}={current_page_number + 1}'
+        return f'{url}?{self.page_number_param}={current_page_number + 1}'

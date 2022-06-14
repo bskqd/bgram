@@ -8,7 +8,7 @@ from accounts.api.v1.schemas import authorization as authorization_schemas
 from accounts.api.v1.schemas import users as user_schemas
 from accounts.models import User, EmailConfirmationToken
 from accounts.services.authorization import create_email_confirmation_token
-from accounts.services.users import UserService
+from accounts.services.users import UsersCreateUpdateService
 from core.config import settings
 from core.services.authorization import JWTAuthenticationServices
 from core.database.repository import SQLAlchemyCRUDRepository
@@ -29,7 +29,7 @@ async def registration_view(
     email = user_data.pop('email')
     password = user_data.pop('password')
     db_repository = SQLAlchemyCRUDRepository(User, db_session)
-    user = await UserService(db_repository).create_user(nickname, email, password, **user_data)
+    user = await UsersCreateUpdateService(db_repository).create_user(nickname, email, password, **user_data)
     token = await create_email_confirmation_token(user, db_session)
     email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
     send_email(
@@ -65,7 +65,7 @@ async def confirm_email_view(
     )
     db_repository = SQLAlchemyCRUDRepository(User, db_session, get_user_query)
     user = await db_repository.get_one(EmailConfirmationToken.token == token.token)
-    await UserService(db_repository).update_user(user, is_active=True)
+    await UsersCreateUpdateService(db_repository).update_user(user, is_active=True)
     return 'Your email is successfully confirmed.'
 
 

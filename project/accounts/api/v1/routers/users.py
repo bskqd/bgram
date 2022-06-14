@@ -1,61 +1,54 @@
-from typing import List
-
 from fastapi import APIRouter, UploadFile, File, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from accounts.api.dependencies.users import get_users_filterset
+from accounts.api.dependencies.users import (
+    get_users_filterset, get_users_retrieve_service, get_users_paginator, get_users_create_update_service,
+    get_user_photos_service
+)
 from accounts.api.v1.schemas import users as user_schemas
+from accounts.api.v1.schemas.users import PaginatedUsersListSchema
 from accounts.api.v1.selectors.users import get_users_db_query
-from accounts.models import User, UserPhoto
-from accounts.services.users import UserService
-from core.database.repository import SQLAlchemyCRUDRepository
-from core.services.files import FilesService
+from accounts.models import User
 
 router = APIRouter()
 
 
-@router.get('/users', response_model=List[user_schemas.UserSchema])
+@router.get('/users', response_model=PaginatedUsersListSchema)
 async def list_users_view(
-        db_session: AsyncSession = Depends(),
         request_user: User = Depends(),
-        filterset=Depends(get_users_filterset),
+        users_filterset=Depends(get_users_filterset),
+        users_paginator=Depends(get_users_paginator),
 ):
-    db_repository = SQLAlchemyCRUDRepository(User, db_session)
-    return await UserService(db_repository).list_users(
-        db_query=filterset.filter_db_query(db_query=get_users_db_query(request_user))
-    )
+    return await users_paginator.paginate(users_filterset.filter_db_query(db_query=get_users_db_query(request_user)))
 
 
-@router.get('/users/{user_id}', response_model=user_schemas.UserSchema)
+@router.get('/users/{user_id}', response_model=user_schemas.UsersListSchema)
 async def retrieve_user_view(
         user_id: int,
-        db_session: AsyncSession = Depends(),
         request_user: User = Depends(),
+        users_retrieve_service=Depends(get_users_retrieve_service),
 ):
-    db_repository = SQLAlchemyCRUDRepository(User, db_session)
-    return await UserService(db_repository).retrieve_user(User.id == user_id, db_query=get_users_db_query(request_user))
+    return await users_retrieve_service.get_one_user(User.id == user_id, db_query=get_users_db_query(request_user))
 
 
-@router.patch('/users/{user_id}', response_model=user_schemas.UserSchema)
+@router.patch('/users/{user_id}', response_model=user_schemas.UsersListSchema)
 async def update_user_view(
         user_id: int,
         user_data: user_schemas.UserUpdateSchema,
-        db_session: AsyncSession = Depends(),
         request_user: User = Depends(),
+        users_retrieve_service=Depends(get_users_retrieve_service),
+        users_update_service=Depends(get_users_create_update_service),
 ):
-    db_repository = SQLAlchemyCRUDRepository(User, db_session)
-    user_service = UserService(db_repository)
-    user = await user_service.retrieve_user(User.id == user_id, db_query=get_users_db_query(request_user))
-    return await UserService(db_repository).update_user(user, **user_data.dict(exclude_unset=True))
+    user = await users_retrieve_service.get_one_user(User.id == user_id, db_query=get_users_db_query(request_user))
+    return await users_update_service.update_user(user, **user_data.dict(exclude_unset=True))
 
 
-@router.post('/users/{user_id}/upload_file', response_model=user_schemas.UserSchema)
+@router.post('/users/{user_id}/upload_file', response_model=user_schemas.UsersListSchema)
 async def upload_user_photo_view(
         user_id: int,
         file: UploadFile = File(...),
-        db_session: AsyncSession = Depends(),
         request_user: User = Depends(),
+        user_photos_service=Depends(get_user_photos_service),
+        users_retrieve_service=Depends(get_users_retrieve_service),
 ):
-    db_repository = SQLAlchemyCRUDRepository(User, db_session)
-    await FilesService(db_repository, UserPhoto).create_object_file(file, user_id=user_id)
-    return await UserService(db_repository).retrieve_user(User.id == user_id, db_query=get_users_db_query(request_user))
+    await user_photos_service.create_object_file(file, user_id=user_id)
+    return await users_retrieve_service.get_one_user(User.id == user_id, db_query=get_users_db_query(request_user))

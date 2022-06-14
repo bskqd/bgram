@@ -57,11 +57,11 @@ class BaseCRUDRepository(ABC):
         pass
 
     @abstractmethod
-    async def update(self, *args: Any, **kwargs: Any):
+    async def update(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    async def delete(self, *args: Any):
+    async def delete(self, *args):
         pass
 
     @abstractmethod
@@ -139,10 +139,7 @@ class SQLAlchemyCRUDRepository(BaseCRUDRepository):
 
     async def count(self, *args) -> int:
         db_query = self._get_db_query(*args)
-        db_query = select(func.count()).select_from(db_query)
-        result = await self.__db_session.execute(db_query)
-        count = result.scalar_one()
-        return cast(int, count)
+        return await self.__db_session.scalar(db_query.with_only_columns([func.count()]))
 
-    def _get_db_query(self, *args):
+    def _get_db_query(self, *args) -> Select:
         return self.db_query.where(*args) if self.db_query is not None else select(self.model).where(*args)

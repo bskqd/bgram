@@ -7,19 +7,29 @@ from accounts.utils.users import hash_password
 from core.database.repository import BaseCRUDRepository
 
 
-class UserService:
+class UsersRetrieveService:
     def __init__(self, db_repository: BaseCRUDRepository):
         self.db_repository = db_repository
 
-    async def retrieve_user(self, *args, db_query: Optional[Select] = None) -> User:
+    async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
         if db_query is not None:
             self.db_repository.db_query = db_query
         return await self.db_repository.get_one(*args)
 
-    async def list_users(self, *args, db_query: Optional[Select] = None) -> User:
+    async def get_many_users(self, *args, db_query: Optional[Select] = None) -> User:
         if db_query is not None:
             self.db_repository.db_query = db_query
         return await self.db_repository.get_many(*args)
+
+    async def count_users(self, *args, db_query: Optional[Select] = None) -> int:
+        if db_query is not None:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.count(*args)
+
+
+class UsersCreateUpdateService:
+    def __init__(self, db_repository: BaseCRUDRepository):
+        self.db_repository = db_repository
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:
         user = User(nickname=nickname, email=email, password=hash_password(password), **kwargs)
