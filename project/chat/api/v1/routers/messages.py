@@ -16,7 +16,7 @@ from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from core.database.repository import SQLAlchemyCRUDRepository
-from core.dependencies import EventPublisher, EventReceiver
+from core.dependencies import EventPublisher, EventReceiver, get_paginator
 from core.services.files import FilesService
 from mixins.schemas import FilesSchema
 

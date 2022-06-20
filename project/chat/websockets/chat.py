@@ -4,8 +4,6 @@ from datetime import datetime
 from fastapi import WebSocket
 
 from accounts.models import User
-from chat.services.chat_rooms import ChatRoomCreateUpdateService, ChatRoomRetrieveService
-from core.database.repository import BaseCRUDRepository
 from core.dependencies import EventReceiver, EventPublisher
 
 

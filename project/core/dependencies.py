@@ -7,7 +7,6 @@ from fastapi import Request
 from accounts.models import User
 from core.contrib.redis import redis_client
 from core.database.base import DatabaseSession
-from core.pagination import DefaultPaginationClass
 
 
 class EventPublisher:
