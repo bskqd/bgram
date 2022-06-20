@@ -3,10 +3,23 @@ services:
     build: .
     restart: "on-failure"
     env_file: project/.env
+    depends_on:
+      - redis
     ports:
       - "8000:80"
     networks:
       - bgram
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    networks:
+      - bgram
+    volumes:
+      - redis:/redis
 
 networks:
   bgram:
+volumes:
+  redis:
