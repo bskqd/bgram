@@ -35,5 +35,5 @@ async def get_event_receiver() -> PubSub:
     return redis_client.pubsub()
 
 
-async def get_paginator(request: Request) -> DefaultPaginationClass:
-    return DefaultPaginationClass(request=request)
+async def get_paginator():
+    return

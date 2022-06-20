@@ -7,15 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.models import User
 from chat.api.dependencies import chat as chat_dependencies
+from chat.api.dependencies.chat_rooms import get_chat_rooms_retrieve_service
 from chat.api.dependencies.messages import get_messages_filterset
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.api.v1.selectors.messages import get_messages_db_query
-from chat.models import Message, MessagePhoto, ChatRoom
+from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesService, MessagesFilesServices
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from core.database.repository import SQLAlchemyCRUDRepository
-from core.dependencies import EventPublisher, EventReceiver, get_paginator
+from core.dependencies import EventPublisher, EventReceiver
 from core.services.files import FilesService
 from mixins.schemas import FilesSchema
 
@@ -29,6 +30,7 @@ async def chat_websocket_endpoint(
         request_user: User = Depends(chat_dependencies.get_request_user),
         db_session: AsyncSession = Depends(),
         event_receiver: EventReceiver = Depends(),
+        chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
 ):
     db_repository = SQLAlchemyCRUDRepository(Message, db_session)
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, db_repository)
@@ -37,8 +39,7 @@ async def chat_websocket_endpoint(
     except HTTPException:
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
-    chat_rooms_db_repository = SQLAlchemyCRUDRepository(ChatRoom, db_session)
-    await chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_db_repository)
+    await chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_retrieve_service)
     try:
         await websocket.receive()
         raise WebSocketDisconnect

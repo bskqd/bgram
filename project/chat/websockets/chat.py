@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import WebSocket
 
 from accounts.models import User
-from chat.services.chat_rooms import ChatRoomService
+from chat.services.chat_rooms import ChatRoomCreateUpdateService, ChatRoomRetrieveService
 from core.database.repository import BaseCRUDRepository
 from core.dependencies import EventReceiver, EventPublisher
 
@@ -21,10 +21,10 @@ class ChatRoomsWebSocketConnectionManager:
             self,
             websocket_connection: WebSocketConnection,
             event_receiver: EventReceiver,
-            db_repository: BaseCRUDRepository
+            chat_rooms_retrieve_service,
     ):
         await websocket_connection.websocket.accept()
-        chat_room_ids = await ChatRoomService(db_repository).get_user_chat_room_ids(websocket_connection.user)
+        chat_room_ids = await chat_rooms_retrieve_service.get_user_chat_room_ids(websocket_connection.user)
         await event_receiver.subscribe(*(f'chat_room:{chat_room_id}' for chat_room_id in chat_room_ids))
         async for message in event_receiver.listen():
             if message and message.get('type') != 'subscribe' and (data := message.get('data')):
