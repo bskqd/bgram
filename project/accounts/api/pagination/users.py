@@ -2,10 +2,10 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from accounts.services.users import UsersRetrieveService
-from core.pagination import PaginationDatabaseObjectsRetrieverABC
+from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
 
 
-class UsersPaginationDatabaseObjectsRetriever(PaginationDatabaseObjectsRetrieverABC):
+class UsersPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
     def __init__(self, users_service: UsersRetrieveService):
         self.users_retrieve_service = users_service
 

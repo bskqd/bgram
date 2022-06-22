@@ -2,7 +2,7 @@ from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.api.filters.users import UsersFilterSet
-from accounts.api.pagination.users import UsersPaginationDatabaseObjectsRetriever
+from accounts.api.pagination.users import UsersPaginationDatabaseObjectsRetrieverStrategy
 from accounts.models import User, UserPhoto
 from accounts.services.users import UsersRetrieveService, UsersCreateUpdateService
 from core.database.repository import SQLAlchemyCRUDRepository, BaseCRUDRepository
@@ -35,5 +35,5 @@ async def get_users_paginator(
         request: Request,
         users_retrieve_service=Depends(get_users_retrieve_service)
 ) -> DefaultPaginationClass:
-    users_db_objects_retriever = UsersPaginationDatabaseObjectsRetriever(users_retrieve_service)
-    return DefaultPaginationClass(request, users_db_objects_retriever)
+    users_db_objects_retriever_strategy = UsersPaginationDatabaseObjectsRetrieverStrategy(users_retrieve_service)
+    return DefaultPaginationClass(request, users_db_objects_retriever_strategy)

@@ -8,7 +8,7 @@ from sqlalchemy.sql import Select
 from core.database.base import Base
 
 
-class PaginationDatabaseObjectsRetrieverABC(ABC):
+class PaginationDatabaseObjectsRetrieverStrategyABC(ABC):
     async def get_many(self, db_query: Select) -> list[Base]:
         pass
 
@@ -20,7 +20,7 @@ class DefaultPaginationClass:
     def __init__(
             self,
             request: Request,
-            db_objects_retriever: PaginationDatabaseObjectsRetrieverABC,
+            db_objects_retriever_strategy: PaginationDatabaseObjectsRetrieverStrategyABC,
             page_number_param: str = 'page',
             page_size_param: str = 'page_size',
     ):
@@ -28,16 +28,16 @@ class DefaultPaginationClass:
         self.request_query_params = request.query_params
         self.page_number_param = page_number_param
         self.page_size_param = page_size_param
-        self.db_objects_retriever = db_objects_retriever
+        self.db_objects_retriever_strategy = db_objects_retriever_strategy
 
     async def paginate(self, db_query: Select) -> dict:
         page_size: int = int(self.request_query_params.get(self.page_size_param, 20))
         current_page_number: int = int(self.request_query_params.get(self.page_number_param, 1))
         db_query_offset = page_size * (current_page_number - 1)
         db_query_limit = page_size * current_page_number
-        total_db_objects_count = await self.db_objects_retriever.count(db_query)
+        total_db_objects_count = await self.db_objects_retriever_strategy.count(db_query)
         db_query = db_query.offset(db_query_offset).limit(db_query_limit)
-        db_objects = await self.db_objects_retriever.get_many(db_query)
+        db_objects = await self.db_objects_retriever_strategy.get_many(db_query)
         total_pages = math.ceil(total_db_objects_count / page_size)
         previous_page_url, next_page_url = self.get_previous_and_next_page_urls(
             current_page_number, db_query_limit, total_db_objects_count

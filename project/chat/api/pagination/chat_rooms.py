@@ -2,10 +2,10 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.services.chat_rooms import ChatRoomRetrieveService
-from core.pagination import PaginationDatabaseObjectsRetrieverABC
+from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
 
 
-class ChatRoomsPaginationDatabaseObjectsRetriever(PaginationDatabaseObjectsRetrieverABC):
+class ChatRoomsPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
     def __init__(self, chat_rooms_service: ChatRoomRetrieveService):
         self.chat_rooms_service = chat_rooms_service
 

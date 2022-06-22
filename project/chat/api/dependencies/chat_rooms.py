@@ -1,7 +1,7 @@
 from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chat.api.pagination.chat_rooms import ChatRoomsPaginationDatabaseObjectsRetriever
+from chat.api.pagination.chat_rooms import ChatRoomsPaginationDatabaseObjectsRetrieverStrategy
 from chat.models import ChatRoom
 from chat.services.chat_rooms import ChatRoomRetrieveService, ChatRoomCreateUpdateService
 from core.database.repository import SQLAlchemyCRUDRepository, BaseCRUDRepository
@@ -24,5 +24,7 @@ async def get_chat_rooms_paginator(
         request: Request,
         chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service)
 ) -> DefaultPaginationClass:
-    chat_rooms_db_objects_retriever = ChatRoomsPaginationDatabaseObjectsRetriever(chat_rooms_retrieve_service)
-    return DefaultPaginationClass(request, chat_rooms_db_objects_retriever)
+    chat_rooms_db_objects_retriever_strategy = ChatRoomsPaginationDatabaseObjectsRetrieverStrategy(
+        chat_rooms_retrieve_service
+    )
+    return DefaultPaginationClass(request, chat_rooms_db_objects_retriever_strategy)

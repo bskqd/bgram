@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import Select
 
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessagePhoto
@@ -11,7 +12,27 @@ from core.database.repository import BaseCRUDRepository
 from core.services.files import FilesService
 
 
-class MessagesService:
+class MessagesRetrieveService:
+    def __init__(self, db_repository: BaseCRUDRepository):
+        self.db_repository = db_repository
+
+    async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
+        if db_query is not None:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_one(*args)
+
+    async def get_many_messages(self, *args, db_query: Optional[Select] = None) -> list[Message]:
+        if db_query is not None:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_many(*args)
+
+    async def count_messages(self, *args, db_query: Optional[Select] = None) -> int:
+        if db_query is not None:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.count(*args)
+
+
+class MessagesCreateUpdateDeleteService:
     def __init__(
             self,
             db_repository: BaseCRUDRepository,
@@ -60,27 +81,28 @@ class MessagesService:
         return message_ids
 
 
-class MessagesFilesServices:
-    def __init__(
-            self,
-            message_id: int,
-            message_file_id: int,
-            db_repository: BaseCRUDRepository,
-            event_publisher: EventPublisher
-    ):
-        self.message_id = message_id
-        self.message_file_id = message_file_id
+class MessageFilesRetrieveService:
+    def __init__(self, db_repository: BaseCRUDRepository):
         self.db_repository = db_repository
+
+    async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
+        if db_query is not None:
+            self.db_repository.db_query = db_query
+        return await self.db_repository.get_one(*args)
+
+
+class MessageFilesServices:
+    def __init__(self, message_file: MessagePhoto, files_service: FilesService, event_publisher: EventPublisher):
+        self.message_file = message_file
+        self.message = message_file.message
         self.event_publisher = event_publisher
+        self.files_service = files_service
 
     async def change_message_file(self, replacement_file: UploadFile) -> MessagePhoto:
-        new_message_file: MessagePhoto = await FilesService(
-            self.db_repository,
-            MessagePhoto
-        ).change_file(self.message_file_id, replacement_file)
-        await message_updated_event(self.event_publisher, self.message_id, self.db_repository)
+        new_message_file: MessagePhoto = await self.files_service.change_file(self.message_file.id, replacement_file)
+        await message_updated_event(self.event_publisher, self.message)
         return new_message_file
 
     async def delete_message_file(self):
-        await FilesService(self.db_repository, MessagePhoto).delete_file_object(self.message_file_id)
-        await message_updated_event(self.event_publisher, self.message_id, self.db_repository)
+        await self.files_service.delete_file_object(self.message_file.id)
+        await message_updated_event(self.event_publisher, self.message)
