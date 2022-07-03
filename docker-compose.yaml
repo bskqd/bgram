@@ -1,25 +1,42 @@
 services:
-  bgram:
+  app:
     build: .
-    restart: "on-failure"
+    restart: on-failure
     env_file: project/.env
     depends_on:
       - redis
+      - db
     ports:
-      - "8000:80"
+      - '8000:8000'
     networks:
-      - bgram
+      - app-network
   redis:
     image: redis:6.2-alpine
     restart: always
     ports:
       - '6379:6379'
     networks:
-      - bgram
+      - app-network
     volumes:
-      - redis:/redis
+      - redis:/var/lib/redis/data
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=bohdan
+      - POSTGRES_PASSWORD=bohdan1234
+      - POSTGRES_DATABASE=bgram
+    ports:
+      - '5432:5432'
+    networks:
+      - app-network
+    volumes:
+      - db:/var/lib/postgresql/data
 
 networks:
-  bgram:
+  app-network:
 volumes:
   redis:
+    driver: local
+  db:
+    driver: local

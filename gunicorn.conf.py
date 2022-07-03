@@ -2,7 +2,7 @@ import multiprocessing
 
 from gunicorn import glogging
 
-bind = "0.0.0.0:8000"
+bind = '0.0.0.0:8000'
 worker_class = 'uvicorn.workers.UvicornWorker'
 workers = multiprocessing.cpu_count() * 2 + 1
 reload = True

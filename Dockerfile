@@ -13,4 +13,4 @@ COPY ./project /project
 
 WORKDIR /project
 
-CMD ["gunicorn", "main:app", "--config", "../gunicorn.conf.py"]
+CMD ["sh", "-c", "gunicorn main:app --config ../gunicorn.conf.py ; alembic upgrade head"]
