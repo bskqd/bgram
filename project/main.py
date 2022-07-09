@@ -1,22 +1,40 @@
+from typing import Callable
+
 from fastapi import FastAPI
+from pydantic import BaseSettings
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.staticfiles import StaticFiles
 
-import core.dependencies as dependencies
 from accounts.models import User
 from core.config import settings
+from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
 from core.middleware.authentication import JWTAuthenticationMiddleware
 from core.routers import v1
 
-app = FastAPI()
 
-app.add_middleware(JWTAuthenticationMiddleware)
+def create_application(dependency_overrides_factory: Callable, config: BaseSettings):
+    application = FastAPI()
 
-app.mount(f'/{settings.MEDIA_URL}', StaticFiles(directory=settings.MEDIA_PATH), name='media')
+    application.add_middleware(JWTAuthenticationMiddleware)
 
-app.include_router(v1.router, prefix='/api/v1')
+    application.mount(f'/{config.MEDIA_URL}', StaticFiles(directory=config.MEDIA_PATH), name='media')
 
-app.dependency_overrides[AsyncSession] = dependencies.db_session
-app.dependency_overrides[User] = dependencies.get_request_user
-app.dependency_overrides[dependencies.EventPublisher] = dependencies.get_event_publisher
-app.dependency_overrides[dependencies.EventReceiver] = dependencies.get_event_receiver
+    application.include_router(v1.router, prefix='/api/v1')
+
+    dependencies_provider = FastapiDependenciesProvider(config)
+    dependency_overrides = dependency_overrides_factory(dependencies_provider)
+    application.dependency_overrides = dependency_overrides
+
+    return application
+
+
+def fastapi_dependency_overrides_factory(dependencies_provider: FastapiDependenciesProvider):
+    return {
+        AsyncSession: dependencies_provider.get_db_session,
+        User: dependencies_provider.get_request_user,
+        EventPublisher: dependencies_provider.get_event_publisher,
+        EventReceiver: dependencies_provider.get_event_receiver,
+    }
+
+
+app = create_application(fastapi_dependency_overrides_factory, settings)

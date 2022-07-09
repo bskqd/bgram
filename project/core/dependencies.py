@@ -1,12 +1,9 @@
-from typing import Optional
-
-from aioredis import Redis
-from aioredis.client import PubSub
 from fastapi import Request
+from pydantic import BaseSettings
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
-from accounts.models import User
 from core.contrib.redis import redis_client
-from core.database.base import DatabaseSession
 
 
 class EventPublisher:
@@ -17,22 +14,26 @@ class EventReceiver:
     pass
 
 
-async def db_session() -> DatabaseSession:
-    async with (session := DatabaseSession()):
-        yield session
+class FastapiDependenciesProvider:
+    def __init__(self, config: BaseSettings):
+        self.db_sessionmaker = sessionmaker(
+            create_async_engine(config.DATABASE_URL),
+            autoflush=False,
+            class_=AsyncSession
+        )
 
+    async def get_db_session(self):
+        async with (session := self.db_sessionmaker()):
+            yield session
 
-async def get_request_user(request: Request) -> Optional[User]:
-    return request.state.user
+    @staticmethod
+    async def get_request_user(request: Request):
+        return request.state.user
 
+    @staticmethod
+    async def get_event_publisher():
+        return redis_client
 
-async def get_event_publisher() -> Redis:
-    return redis_client
-
-
-async def get_event_receiver() -> PubSub:
-    return redis_client.pubsub()
-
-
-async def get_paginator():
-    return
+    @staticmethod
+    async def get_event_receiver():
+        return redis_client.pubsub()

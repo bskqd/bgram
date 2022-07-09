@@ -9,14 +9,14 @@ from chat.api.dependencies import chat as chat_dependencies
 from chat.api.dependencies.chat_rooms import get_chat_rooms_retrieve_service
 from chat.api.dependencies.messages import (
     get_messages_filterset, get_messages_db_repository, get_messages_create_update_delete_service,
-    get_messages_retrieve_service, get_message_files_service
+    get_messages_retrieve_service, get_message_files_service, get_messages_paginator
 )
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.api.v1.selectors.messages import get_messages_db_query
 from chat.models import Message
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
-from core.dependencies import EventReceiver, get_paginator
+from core.dependencies import EventReceiver
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -50,7 +50,7 @@ async def list_messages_view(
         chat_room_id: int,
         request: Request,
         filterset=Depends(get_messages_filterset),
-        paginator=Depends(get_paginator),
+        paginator=Depends(get_messages_paginator),
 ):
     return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(request, chat_room_id)))
 

@@ -9,7 +9,7 @@ from chat.models import Message, MessagePhoto
 from chat.services.messages import MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesServices, \
     MessageFilesRetrieveService
 from core.database.repository import BaseCRUDRepository, SQLAlchemyCRUDRepository
-from core.dependencies import EventPublisher, get_event_publisher
+from core.dependencies import EventPublisher
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
 from core.services.files import FilesService
@@ -39,7 +39,7 @@ async def get_message_files_service(
         request: Request,
         message_files_retrieve_service=Depends(get_message_files_retrieve_service),
         files_service=Depends(get_file_service_for_message_files),
-        event_publisher=Depends(get_event_publisher)
+        event_publisher: EventPublisher = Depends()
 ):
     message_file_id = request.path_params.get('message_file_id')
     message_file = await message_files_retrieve_service.get_one_message_file(
