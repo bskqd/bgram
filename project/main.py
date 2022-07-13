@@ -12,7 +12,7 @@ from core.middleware.authentication import JWTAuthenticationMiddleware
 from core.routers import v1
 
 
-def create_application(dependency_overrides_factory: Callable, config: BaseSettings):
+def create_application(dependency_overrides_factory: Callable, config: BaseSettings) -> FastAPI:
     application = FastAPI()
 
     application.add_middleware(JWTAuthenticationMiddleware)
@@ -28,7 +28,7 @@ def create_application(dependency_overrides_factory: Callable, config: BaseSetti
     return application
 
 
-def fastapi_dependency_overrides_factory(dependencies_provider: FastapiDependenciesProvider):
+def fastapi_dependency_overrides_factory(dependencies_provider: FastapiDependenciesProvider) -> dict:
     return {
         AsyncSession: dependencies_provider.get_db_session,
         User: dependencies_provider.get_request_user,
