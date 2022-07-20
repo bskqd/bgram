@@ -22,8 +22,7 @@ def create_application(dependency_overrides_factory: Callable, config: BaseSetti
     application.include_router(v1.router, prefix='/api/v1')
 
     dependencies_provider = FastapiDependenciesProvider(config)
-    dependency_overrides = dependency_overrides_factory(dependencies_provider)
-    application.dependency_overrides = dependency_overrides
+    application.dependency_overrides = dependency_overrides_factory(dependencies_provider)
 
     return application
 

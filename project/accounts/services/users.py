@@ -1,14 +1,26 @@
+from abc import ABC
 from typing import Optional
 
 from sqlalchemy.sql import Select
 
 from accounts.models import User
 from accounts.utils.users import hash_password
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 
 
-class UsersRetrieveService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IUsersRetrieveService(ABC):
+    async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
+        pass
+
+    async def get_many_users(self, *args, db_query: Optional[Select] = None) -> list[User]:
+        pass
+
+    async def count_users(self, *args, db_query: Optional[Select] = None) -> int:
+        pass
+
+
+class UsersRetrieveService(IUsersRetrieveService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
@@ -27,8 +39,16 @@ class UsersRetrieveService:
         return await self.db_repository.count(*args)
 
 
-class UsersCreateUpdateService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IUsersCreateUpdateService(ABC):
+    async def create_user(self, *args, **kwargs) -> User:
+        pass
+
+    async def update_user(self, user: User, **data_for_update) -> User:
+        pass
+
+
+class UsersCreateUpdateService(IUsersCreateUpdateService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:

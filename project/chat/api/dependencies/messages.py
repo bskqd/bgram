@@ -6,21 +6,21 @@ from sqlalchemy.orm import joinedload
 from chat.api.filters.messages import MessagesFilterSet
 from chat.api.pagination.messages import MessagesPaginationDatabaseObjectsRetrieverStrategy
 from chat.models import Message, MessagePhoto
-from chat.services.messages import MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesServices, \
+from chat.services.messages import MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesService, \
     MessageFilesRetrieveService
-from core.database.repository import BaseCRUDRepository, SQLAlchemyCRUDRepository
+from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
 from core.dependencies import EventPublisher
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
 from core.services.files import FilesService
 
 
-async def get_messages_db_repository(db_session: AsyncSession = Depends()) -> BaseCRUDRepository:
-    return SQLAlchemyCRUDRepository(Message, db_session)
+async def get_messages_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
+    return SQLAlchemyDatabaseRepository(Message, db_session)
 
 
-async def get_message_files_db_repository(db_session: AsyncSession = Depends()) -> BaseCRUDRepository:
-    return SQLAlchemyCRUDRepository(MessagePhoto, db_session)
+async def get_message_files_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
+    return SQLAlchemyDatabaseRepository(MessagePhoto, db_session)
 
 
 async def get_messages_retrieve_service(db_repository=Depends(get_messages_db_repository)):
@@ -46,7 +46,7 @@ async def get_message_files_service(
         MessagePhoto.id == message_file_id,
         db_query=select(MessagePhoto).options(joinedload(MessagePhoto.message))
     )
-    return MessageFilesServices(message_file, files_service, event_publisher)
+    return MessageFilesService(message_file, files_service, event_publisher)
 
 
 async def get_messages_create_update_delete_service(

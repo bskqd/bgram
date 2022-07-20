@@ -1,12 +1,12 @@
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.services.chat_rooms import ChatRoomRetrieveService
+from chat.services.chat_rooms import ChatRoomsRetrieveService
 from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
 
 
 class ChatRoomsPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
-    def __init__(self, chat_rooms_service: ChatRoomRetrieveService):
+    def __init__(self, chat_rooms_service: ChatRoomsRetrieveService):
         self.chat_rooms_service = chat_rooms_service
 
     async def get_many(self, db_query: Select) -> list[User]:

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 
 
 class AbstractView(ABC):
@@ -32,7 +32,7 @@ class AbstractView(ABC):
 
     async def get_paginated_response(
             self,
-            db_repository: BaseCRUDRepository,
+            db_repository: BaseDatabaseRepository,
             db_query: Select,
             **kwargs
     ) -> dict:

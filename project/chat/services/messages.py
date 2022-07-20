@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Optional, Tuple
 
 from fastapi import UploadFile
@@ -8,12 +9,23 @@ from sqlalchemy.sql import Select
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessagePhoto
 from core.dependencies import EventPublisher
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 from core.services.files import FilesService
 
 
-class MessagesRetrieveService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IMessagesRetrieveService(ABC):
+    async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
+        pass
+
+    async def get_many_messages(self, *args, db_query: Optional[Select] = None) -> list[Message]:
+        pass
+
+    async def count_messages(self, *args, db_query: Optional[Select] = None) -> int:
+        pass
+
+
+class MessagesRetrieveService(IMessagesRetrieveService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
@@ -32,10 +44,21 @@ class MessagesRetrieveService:
         return await self.db_repository.count(*args)
 
 
-class MessagesCreateUpdateDeleteService:
+class IMessagesCreateUpdateDeleteService(ABC):
+    async def create_message(self, *args, **kwargs) -> Message:
+        pass
+
+    async def update_message(self, *args, **kwargs) -> Message:
+        pass
+
+    async def delete_messages(self, *args) -> tuple[int]:
+        pass
+
+
+class MessagesCreateUpdateDeleteService(IMessagesCreateUpdateDeleteService):
     def __init__(
             self,
-            db_repository: BaseCRUDRepository,
+            db_repository: BaseDatabaseRepository,
             chat_room_id: Optional[int] = None,
             event_publisher: Optional[EventPublisher] = None,
             files_service: Optional[FilesService] = None,
@@ -81,8 +104,13 @@ class MessagesCreateUpdateDeleteService:
         return message_ids
 
 
-class MessageFilesRetrieveService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IMessageFilesRetrieveService(ABC):
+    async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
+        pass
+
+
+class MessageFilesRetrieveService(IMessageFilesRetrieveService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
@@ -91,7 +119,15 @@ class MessageFilesRetrieveService:
         return await self.db_repository.get_one(*args)
 
 
-class MessageFilesServices:
+class IMessageFilesService(ABC):
+    async def change_message_file(self, replacement_file: UploadFile) -> MessagePhoto:
+        pass
+
+    async def delete_message_file(self):
+        pass
+
+
+class MessageFilesService(IMessageFilesService):
     def __init__(self, message_file: MessagePhoto, files_service: FilesService, event_publisher: EventPublisher):
         self.message_file = message_file
         self.message = message_file.message

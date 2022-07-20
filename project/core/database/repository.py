@@ -7,27 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, AsyncSessionTransaction
 from sqlalchemy.sql import Select
 
 Model = TypeVar('Model')
-TransactionContext = AsyncContextManager[AsyncSessionTransaction]
 
 
-class BaseTransactionRepository(ABC):
-    @abstractmethod
-    async def transaction(self):
-        pass
-
-
-class SQLAlchemyTransactionRepository(BaseTransactionRepository):
-    def __init__(self, db_session: AsyncSession):
-        self.__db_session = db_session
-
-    @asynccontextmanager
-    async def transaction(self) -> TransactionContext:
-        async with self.__db_session as transaction:
-            yield transaction
-        await transaction.rollback()
-
-
-class BaseCRUDRepository(ABC):
+class BaseDatabaseRepository(ABC):
     @abstractmethod
     def add(self, object_to_add) -> None:
         pass
@@ -81,7 +63,7 @@ class BaseCRUDRepository(ABC):
         pass
 
 
-class SQLAlchemyCRUDRepository(BaseCRUDRepository):
+class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
 
     def __init__(self, model: Type[Model], db_session: AsyncSession, db_query: Optional[Select] = None):
         self.model = model

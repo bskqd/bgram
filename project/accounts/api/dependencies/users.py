@@ -5,14 +5,14 @@ from accounts.api.filters.users import UsersFilterSet
 from accounts.api.pagination.users import UsersPaginationDatabaseObjectsRetrieverStrategy
 from accounts.models import User, UserPhoto
 from accounts.services.users import UsersRetrieveService, UsersCreateUpdateService
-from core.database.repository import SQLAlchemyCRUDRepository, BaseCRUDRepository
+from core.database.repository import SQLAlchemyDatabaseRepository, BaseDatabaseRepository
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
 from core.services.files import FilesService
 
 
-async def get_users_db_repository(db_session: AsyncSession = Depends()) -> BaseCRUDRepository:
-    return SQLAlchemyCRUDRepository(User, db_session)
+async def get_users_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
+    return SQLAlchemyDatabaseRepository(User, db_session)
 
 
 async def get_users_retrieve_service(db_repository=Depends(get_users_db_repository)):

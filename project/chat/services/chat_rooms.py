@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Optional, List, Iterable, Union
 
 from sqlalchemy import select
@@ -5,11 +6,25 @@ from sqlalchemy.sql import Select
 
 from accounts.models import User
 from chat.models import ChatRoom, chatroom_members_association_table
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 
 
-class ChatRoomRetrieveService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IChatRoomsRetrieveService(ABC):
+    async def get_one_chat_room(self, *args, db_query: Optional[Select] = None) -> ChatRoom:
+        pass
+
+    async def get_many_chat_rooms(self, *args, db_query: Optional[Select] = None) -> list[ChatRoom]:
+        pass
+
+    async def count_chat_rooms(self, *args, db_query: Optional[Select] = None) -> int:
+        pass
+
+    async def get_user_chat_room_ids(self, user: Union[int, User]) -> list[int]:
+        pass
+
+
+class ChatRoomsRetrieveService(IChatRoomsRetrieveService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def get_one_chat_room(self, *args, db_query: Optional[Select] = None) -> ChatRoom:
@@ -39,8 +54,16 @@ class ChatRoomRetrieveService:
         return chat_room_ids
 
 
-class ChatRoomCreateUpdateService:
-    def __init__(self, db_repository: BaseCRUDRepository):
+class IChatRoomsCreateUpdateService(ABC):
+    async def create_chat_room(self, *args, **kwargs) -> ChatRoom:
+        pass
+
+    async def update_chat_room(self, *args, **kwargs) -> ChatRoom:
+        pass
+
+
+class ChatRoomsCreateUpdateService(IChatRoomsCreateUpdateService):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
     async def create_chat_room(self, name: str, members_ids: List[int], **kwargs) -> ChatRoom:

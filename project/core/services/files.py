@@ -6,7 +6,7 @@ from typing import Type, Union
 from fastapi import UploadFile
 
 from core.config import settings
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 from mixins.models import PhotoABC
 
 
@@ -15,7 +15,7 @@ class FilesService:
     Service class for working with files.
     """
 
-    def __init__(self, db_repository: BaseCRUDRepository, file_model: Type[PhotoABC]):
+    def __init__(self, db_repository: BaseDatabaseRepository, file_model: Type[PhotoABC]):
         self.db_repository = db_repository
         self.file_model = file_model
 

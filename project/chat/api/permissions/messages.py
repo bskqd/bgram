@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from accounts.models import User
 from chat.models import chatroom_members_association_table, Message, MessagePhoto
-from core.database.repository import BaseCRUDRepository
+from core.database.repository import BaseDatabaseRepository
 from core import permissions as mixins_permissions
 from core.permissions import UserIsAuthenticatedPermission
 
@@ -19,7 +19,7 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
             self,
             request_user: User,
             chat_room_id: int,
-            db_repository: BaseCRUDRepository,
+            db_repository: BaseDatabaseRepository,
             request: Optional[Request] = None,
             message_ids: Optional[Union[tuple[int], list[int]]] = None
     ):
@@ -66,7 +66,7 @@ class UserMessageFilesPermissions(mixins_permissions.BasePermission):
             self,
             request_user: User,
             message_file_id: int,
-            db_repository: BaseCRUDRepository,
+            db_repository: BaseDatabaseRepository,
     ):
         self.request_user = request_user
         self.message_file_id = message_file_id
