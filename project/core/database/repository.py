@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
-from typing import TypeVar, Type, Any, Optional, List, cast, AsyncContextManager
+from typing import TypeVar, Type, Any, Optional, List, cast
 
 from sqlalchemy import select, update, func, delete, exists
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncSessionTransaction
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
 Model = TypeVar('Model')
