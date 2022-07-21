@@ -7,11 +7,19 @@ from core.contrib.redis import redis_client
 
 
 class EventPublisher:
-    pass
+    def publish(self, *args):
+        pass
 
 
 class EventReceiver:
-    pass
+    def subscribe(self, *args, **kwargs):
+        pass
+
+    def unsubscribe(self, *args):
+        pass
+
+    def listen(self):
+        pass
 
 
 class FastapiDependenciesProvider:
@@ -19,7 +27,7 @@ class FastapiDependenciesProvider:
         self.db_sessionmaker = sessionmaker(
             create_async_engine(config.DATABASE_URL),
             autoflush=False,
-            class_=AsyncSession
+            class_=AsyncSession,
         )
 
     async def get_db_session(self):
