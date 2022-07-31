@@ -63,3 +63,7 @@ class UsersCreateUpdateService(IUsersCreateUpdateService):
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user
+
+
+class UserPhotoService(ABC):
+    pass

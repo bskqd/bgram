@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from accounts.api.dependencies.users import get_users_retrieve_service
 from accounts.models import User
+from accounts.services.users import IUsersRetrieveService
 from chat.api.dependencies.chat_rooms import (
     get_chat_rooms_paginator, get_chat_rooms_retrieve_service, get_chat_rooms_create_update_service,
 )
@@ -32,7 +32,7 @@ async def retrieve_chat_room_view(
     await ChatRoomPermission(request_user).check_permissions()
     return await chat_rooms_retrieve_service.get_one_chat_room(
         ChatRoom.id == chat_room_id,
-        db_query=get_chat_rooms_db_query(request_user)
+        db_query=get_chat_rooms_db_query(request_user),
     )
 
 
@@ -51,8 +51,8 @@ async def create_chat_room_view(
     return await chat_rooms_retrieve_service.get_one(
         ChatRoom.id == chat_room.id,
         db_query=select(ChatRoom).options(
-            joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
-        )
+            joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos),
+        ),
     )
 
 
@@ -63,7 +63,7 @@ async def update_chat_room_view(
         request_user: User = Depends(),
         chat_rooms_update_service=Depends(get_chat_rooms_create_update_service),
         chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
-        users_retrieve_service=Depends(get_users_retrieve_service),
+        users_retrieve_service: IUsersRetrieveService = Depends(),
 ):
     await ChatRoomPermission(request_user).check_permissions()
     chat_room = await chat_rooms_retrieve_service.get_one_chat_room(ChatRoom.id == chat_room_id)

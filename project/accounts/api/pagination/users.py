@@ -1,12 +1,18 @@
+from abc import ABC
+
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from accounts.services.users import UsersRetrieveService
+from accounts.services.users import IUsersRetrieveService
 from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
 
 
+class IUsersPaginator(ABC):
+    pass
+
+
 class UsersPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
-    def __init__(self, users_service: UsersRetrieveService):
+    def __init__(self, users_service: IUsersRetrieveService):
         self.users_retrieve_service = users_service
 
     async def get_many(self, db_query: Select) -> list[User]:

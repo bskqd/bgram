@@ -5,7 +5,11 @@ from core.filters import CharFilter, FilterSet, icontains
 from sqlalchemy import or_
 
 
-class UsersFilterSet(FilterSet):
+class IUserFilterSet(FilterSet):
+    model_class = User
+
+
+class UsersFilterSet(IUserFilterSet):
     model_class = User
     search = CharFilter(min_length=3, method_name='universal_search')
 
