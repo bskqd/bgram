@@ -1,4 +1,4 @@
-from abc import ABC
+import abc
 from typing import Optional
 
 from sqlalchemy.sql import Select
@@ -6,20 +6,24 @@ from sqlalchemy.sql import Select
 from accounts.models import User
 from accounts.utils.users import hash_password
 from core.database.repository import BaseDatabaseRepository
+from core.services.files import FilesServiceABC, FilesService
 
 
-class IUsersRetrieveService(ABC):
+class UsersRetrieveServiceABC(abc.ABC):
+    @abc.abstractmethod
     async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
         pass
 
+    @abc.abstractmethod
     async def get_many_users(self, *args, db_query: Optional[Select] = None) -> list[User]:
         pass
 
+    @abc.abstractmethod
     async def count_users(self, *args, db_query: Optional[Select] = None) -> int:
         pass
 
 
-class UsersRetrieveService(IUsersRetrieveService):
+class UsersRetrieveService(UsersRetrieveServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
@@ -39,15 +43,17 @@ class UsersRetrieveService(IUsersRetrieveService):
         return await self.db_repository.count(*args)
 
 
-class IUsersCreateUpdateService(ABC):
+class UsersCreateUpdateServiceABC(abc.ABC):
+    @abc.abstractmethod
     async def create_user(self, *args, **kwargs) -> User:
         pass
 
+    @abc.abstractmethod
     async def update_user(self, user: User, **data_for_update) -> User:
         pass
 
 
-class UsersCreateUpdateService(IUsersCreateUpdateService):
+class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
@@ -65,5 +71,9 @@ class UsersCreateUpdateService(IUsersCreateUpdateService):
         return user
 
 
-class UserPhotoService(ABC):
+class UserFilesServiceABC(FilesServiceABC, abc.ABC):
     pass
+
+
+class UserFilesService(UserFilesServiceABC, FilesService):
+    file_model = User

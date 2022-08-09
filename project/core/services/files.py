@@ -1,7 +1,8 @@
+import abc
 import asyncio
 import os
 import uuid
-from typing import Type, Union
+from typing import Type, Union, Optional
 
 from fastapi import UploadFile
 
@@ -10,14 +11,31 @@ from core.database.repository import BaseDatabaseRepository
 from mixins.models import PhotoABC
 
 
-class FilesService:
+class FilesServiceABC(abc.ABC):
+    @abc.abstractmethod
+    async def create_object_file(self, *args, **kwargs) -> PhotoABC:
+        pass
+
+    @abc.abstractmethod
+    async def change_file(self, *args, **kwargs) -> PhotoABC:
+        pass
+
+    @abc.abstractmethod
+    async def delete_file_object(self, *args, **kwargs):
+        pass
+
+
+class FilesService(FilesServiceABC):
     """
     Service class for working with files.
     """
+    file_model: Type[PhotoABC] = None
 
-    def __init__(self, db_repository: BaseDatabaseRepository, file_model: Type[PhotoABC]):
+    # TODO: remove optional file_model argument (for this inspect MessageFilesService)
+    def __init__(self, db_repository: BaseDatabaseRepository, file_model: Optional[Type[PhotoABC]] = None):
         self.db_repository = db_repository
-        self.file_model = file_model
+        if not self.file_model and file_model:
+            self.file_model = file_model
 
     async def create_object_file(self, file: UploadFile, **kwargs) -> PhotoABC:
         """
@@ -64,10 +82,10 @@ class FilesService:
 
     async def write_file(self, folder_to_save_file: str, file: UploadFile) -> str:
         content_to_write = await file.read()
-        filename = '_'.join([name_part for name_part in file.filename.split()])
+        filename = '_'.join(file.filename.split())
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self.write_file_to_filesystem, folder_to_save_file, filename, content_to_write
+            None, self.write_file_to_filesystem, folder_to_save_file, filename, content_to_write,
         )
 
     def write_file_to_filesystem(self, folder_to_save_file: str, filename: str, content_to_write: bytes) -> str:

@@ -5,12 +5,12 @@ from pydantic import BaseSettings
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.staticfiles import StaticFiles
 
-from accounts.api.dependencies.users import UsersDependenciesProvider
-from accounts.api.filters.users import IUserFilterSet
-from accounts.api.pagination.users import IUsersPaginator
-from accounts.database.repository.users import IUsersDatabaseRepository
+from accounts.api.filters.users import UserFilterSetABC
+from accounts.api.pagination.users import UsersPaginatorABC
+from accounts.database.repository.users import UsersDatabaseRepositoryABC
+from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
-from accounts.services.users import IUsersRetrieveService, IUsersCreateUpdateService, UserPhotoService
+from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
 from core.config import settings
 from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
 from core.middleware.authentication import JWTAuthenticationMiddleware
@@ -40,12 +40,12 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         User: dependencies_provider.get_request_user,
         EventPublisher: dependencies_provider.get_event_publisher,
         EventReceiver: dependencies_provider.get_event_receiver,
-        IUsersDatabaseRepository: users_dependencies_provider.get_users_db_repository,
-        IUsersRetrieveService: users_dependencies_provider.get_users_retrieve_service,
-        IUsersCreateUpdateService: users_dependencies_provider.get_users_create_update_service,
-        IUsersPaginator: users_dependencies_provider.get_users_paginator,
-        IUserFilterSet: users_dependencies_provider.get_users_filterset,
-        UserPhotoService: users_dependencies_provider.get_user_photos_service,
+        UsersDatabaseRepositoryABC: users_dependencies_provider.get_users_db_repository,
+        UsersRetrieveServiceABC: users_dependencies_provider.get_users_retrieve_service,
+        UsersCreateUpdateServiceABC: users_dependencies_provider.get_users_create_update_service,
+        UsersPaginatorABC: users_dependencies_provider.get_users_paginator,
+        UserFilterSetABC: users_dependencies_provider.get_users_filterset,
+        UserFilesServiceABC: users_dependencies_provider.get_user_files_service,
     }
 
 

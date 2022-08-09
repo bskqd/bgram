@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from accounts.models import User
-from accounts.services.users import IUsersRetrieveService
+from accounts.services.users import UsersRetrieveServiceABC
 from chat.api.dependencies.chat_rooms import (
     get_chat_rooms_paginator, get_chat_rooms_retrieve_service, get_chat_rooms_create_update_service,
 )
@@ -63,7 +63,7 @@ async def update_chat_room_view(
         request_user: User = Depends(),
         chat_rooms_update_service=Depends(get_chat_rooms_create_update_service),
         chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
-        users_retrieve_service: IUsersRetrieveService = Depends(),
+        users_retrieve_service: UsersRetrieveServiceABC = Depends(),
 ):
     await ChatRoomPermission(request_user).check_permissions()
     chat_room = await chat_rooms_retrieve_service.get_one_chat_room(ChatRoom.id == chat_room_id)

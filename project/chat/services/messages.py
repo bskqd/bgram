@@ -8,8 +8,8 @@ from sqlalchemy.sql import Select
 
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessagePhoto
-from core.dependencies import EventPublisher
 from core.database.repository import BaseDatabaseRepository
+from core.dependencies import EventPublisher
 from core.services.files import FilesService
 
 

@@ -1,5 +1,7 @@
 from abc import ABC
 
+from core.database.repository import BaseDatabaseRepository
 
-class IUsersDatabaseRepository(ABC):
+
+class UsersDatabaseRepositoryABC(BaseDatabaseRepository, ABC):
     pass

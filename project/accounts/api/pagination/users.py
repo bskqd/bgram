@@ -3,16 +3,16 @@ from abc import ABC
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from accounts.services.users import IUsersRetrieveService
-from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
+from accounts.services.users import UsersRetrieveServiceABC
+from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC, PaginationClassABC
 
 
-class IUsersPaginator(ABC):
+class UsersPaginatorABC(PaginationClassABC, ABC):
     pass
 
 
 class UsersPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
-    def __init__(self, users_service: IUsersRetrieveService):
+    def __init__(self, users_service: UsersRetrieveServiceABC):
         self.users_retrieve_service = users_service
 
     async def get_many(self, db_query: Select) -> list[User]:

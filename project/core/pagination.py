@@ -1,5 +1,5 @@
+import abc
 import math
-from abc import ABC
 from typing import Tuple
 
 from fastapi import Request
@@ -8,7 +8,7 @@ from sqlalchemy.sql import Select
 from core.database.base import Base
 
 
-class PaginationDatabaseObjectsRetrieverStrategyABC(ABC):
+class PaginationDatabaseObjectsRetrieverStrategyABC(abc.ABC):
     async def get_many(self, db_query: Select) -> list[Base]:
         pass
 
@@ -16,19 +16,30 @@ class PaginationDatabaseObjectsRetrieverStrategyABC(ABC):
         pass
 
 
-class DefaultPaginationClass:
+class PaginationClassABC(abc.ABC):
+    @abc.abstractmethod
+    async def paginate(self, *args, **kwargs) -> dict:
+        """
+        Paginates db objects and returns a response containing all needed information including paginated db objects.
+        """
+        pass
+
+
+class DefaultPaginationClass(PaginationClassABC):
     def __init__(
             self,
             request: Request,
             db_objects_retriever_strategy: PaginationDatabaseObjectsRetrieverStrategyABC,
             page_number_param: str = 'page',
             page_size_param: str = 'page_size',
+            database_objects_data_keyword_in_response: str = 'data',
     ):
         self.request = request
         self.request_query_params = request.query_params
         self.page_number_param = page_number_param
         self.page_size_param = page_size_param
         self.db_objects_retriever_strategy = db_objects_retriever_strategy
+        self.database_objects_data_keyword_in_response = database_objects_data_keyword_in_response
 
     async def paginate(self, db_query: Select) -> dict:
         page_size: int = int(self.request_query_params.get(self.page_size_param, 20))
@@ -40,10 +51,10 @@ class DefaultPaginationClass:
         db_objects = await self.db_objects_retriever_strategy.get_many(db_query)
         total_pages = math.ceil(total_db_objects_count / page_size)
         previous_page_url, next_page_url = self.get_previous_and_next_page_urls(
-            current_page_number, db_query_limit, total_db_objects_count
+            current_page_number, db_query_limit, total_db_objects_count,
         )
         return {
-            'data': db_objects,
+            self.database_objects_data_keyword_in_response: db_objects,
             'count': total_db_objects_count,
             'total_pages': total_pages,
             'current_page': current_page_number,
@@ -63,7 +74,7 @@ class DefaultPaginationClass:
         url = str(url)
         previous_page = self.get_previous_page_url(url, current_page_number, url_contains_page_number_param)
         next_page = self.get_next_page_url(
-            url, current_page_number, url_contains_page_number_param, db_query_limit, total_db_objects_count
+            url, current_page_number, url_contains_page_number_param, db_query_limit, total_db_objects_count,
         )
         return previous_page, next_page
 
@@ -72,7 +83,8 @@ class DefaultPaginationClass:
             return None
         elif url_contains_page_number_param:
             return url.replace(
-                f'{self.page_number_param}={current_page_number}', f'{self.page_number_param}={current_page_number - 1}'
+                f'{self.page_number_param}={current_page_number}',
+                f'{self.page_number_param}={current_page_number - 1}',
             )
         elif self.request_query_params:
             return f'{url}&{self.page_number_param}={current_page_number - 1}'
@@ -90,7 +102,8 @@ class DefaultPaginationClass:
             return None
         elif url_contains_page_number_param:
             return url.replace(
-                f'{self.page_number_param}={current_page_number}', f'{self.page_number_param}={current_page_number + 1}'
+                f'{self.page_number_param}={current_page_number}',
+                f'{self.page_number_param}={current_page_number + 1}',
             )
         elif self.request_query_params:
             return f'{url}&{self.page_number_param}={current_page_number + 1}'
