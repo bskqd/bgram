@@ -2,7 +2,6 @@ services:
   app:
     build: .
     restart: on-failure
-    env_file: project/.env
     depends_on:
       - redis
       - db
