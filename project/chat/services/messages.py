@@ -1,5 +1,4 @@
 import abc
-from abc import ABC
 from typing import Optional, Tuple
 
 from fastapi import UploadFile
@@ -14,13 +13,16 @@ from core.dependencies import EventPublisher
 from core.services.files import FilesService, FilesServiceABC
 
 
-class IMessagesRetrieveService(ABC):
+class IMessagesRetrieveService(abc.ABC):
+    @abc.abstractmethod
     async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
         pass
 
+    @abc.abstractmethod
     async def get_many_messages(self, *args, db_query: Optional[Select] = None) -> list[Message]:
         pass
 
+    @abc.abstractmethod
     async def count_messages(self, *args, db_query: Optional[Select] = None) -> int:
         pass
 
@@ -45,13 +47,16 @@ class MessagesRetrieveService(IMessagesRetrieveService):
         return await self.db_repository.count(*args)
 
 
-class IMessagesCreateUpdateDeleteService(ABC):
+class IMessagesCreateUpdateDeleteService(abc.ABC):
+    @abc.abstractmethod
     async def create_message(self, *args, **kwargs) -> Message:
         pass
 
+    @abc.abstractmethod
     async def update_message(self, *args, **kwargs) -> Message:
         pass
 
+    @abc.abstractmethod
     async def delete_messages(self, *args) -> tuple[int]:
         pass
 
@@ -105,7 +110,8 @@ class MessagesCreateUpdateDeleteService(IMessagesCreateUpdateDeleteService):
         return message_ids
 
 
-class IMessageFilesRetrieveService(ABC):
+class IMessageFilesRetrieveService(abc.ABC):
+    @abc.abstractmethod
     async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
         pass
 
