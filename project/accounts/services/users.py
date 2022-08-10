@@ -75,5 +75,5 @@ class UserFilesServiceABC(FilesServiceABC, abc.ABC):
     pass
 
 
-class UserFilesService(UserFilesServiceABC, FilesService):
+class UserFilesService(FilesService, UserFilesServiceABC):
     file_model = User

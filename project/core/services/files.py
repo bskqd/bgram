@@ -2,7 +2,7 @@ import abc
 import asyncio
 import os
 import uuid
-from typing import Type, Union, Optional
+from typing import Type, Union
 
 from fastapi import UploadFile
 
@@ -31,11 +31,8 @@ class FilesService(FilesServiceABC):
     """
     file_model: Type[PhotoABC] = None
 
-    # TODO: remove optional file_model argument (for this inspect MessageFilesService)
-    def __init__(self, db_repository: BaseDatabaseRepository, file_model: Optional[Type[PhotoABC]] = None):
+    def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
-        if not self.file_model and file_model:
-            self.file_model = file_model
 
     async def create_object_file(self, file: UploadFile, **kwargs) -> PhotoABC:
         """
