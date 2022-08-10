@@ -7,7 +7,7 @@ from starlette.staticfiles import StaticFiles
 
 from accounts.api.filters.users import UserFilterSetABC
 from accounts.api.pagination.users import UsersPaginatorABC
-from accounts.database.repository.users import UsersDatabaseRepositoryABC
+from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserFilesDatabaseRepositoryABC
 from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
@@ -40,7 +40,9 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         User: dependencies_provider.get_request_user,
         EventPublisher: dependencies_provider.get_event_publisher,
         EventReceiver: dependencies_provider.get_event_receiver,
+
         UsersDatabaseRepositoryABC: users_dependencies_provider.get_users_db_repository,
+        UserFilesDatabaseRepositoryABC: users_dependencies_provider.get_user_files_db_repository,
         UsersRetrieveServiceABC: users_dependencies_provider.get_users_retrieve_service,
         UsersCreateUpdateServiceABC: users_dependencies_provider.get_users_create_update_service,
         UsersPaginatorABC: users_dependencies_provider.get_users_paginator,

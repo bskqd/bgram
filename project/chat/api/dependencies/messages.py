@@ -6,8 +6,9 @@ from sqlalchemy.orm import joinedload
 from chat.api.filters.messages import MessagesFilterSet
 from chat.api.pagination.messages import MessagesPaginationDatabaseObjectsRetrieverStrategy
 from chat.models import Message, MessagePhoto
-from chat.services.messages import MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesService, \
-    MessageFilesRetrieveService
+from chat.services.messages import (
+    MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesService, MessageFilesRetrieveService,
+)
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
 from core.dependencies import EventPublisher
 from core.filters import FilterSet

@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.api.filters.users import UsersFilterSet
 from accounts.api.pagination.users import UsersPaginationDatabaseObjectsRetrieverStrategy
-from accounts.database.repository.users import UsersDatabaseRepositoryABC
-from accounts.models import User
+from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserFilesDatabaseRepositoryABC
+from accounts.models import User, UserPhoto
 from accounts.services.users import (
     UsersRetrieveService, UsersCreateUpdateService, UsersRetrieveServiceABC, UserFilesService,
 )
@@ -19,6 +19,10 @@ class UsersDependenciesProvider:
         return SQLAlchemyDatabaseRepository(User, db_session)
 
     @staticmethod
+    async def get_user_files_db_repository(db_session: AsyncSession = Depends()):
+        return SQLAlchemyDatabaseRepository(UserPhoto, db_session)
+
+    @staticmethod
     async def get_users_retrieve_service(db_repository: UsersDatabaseRepositoryABC = Depends()):
         return UsersRetrieveService(db_repository)
 
@@ -27,7 +31,7 @@ class UsersDependenciesProvider:
         return UsersCreateUpdateService(db_repository)
 
     @staticmethod
-    async def get_user_files_service(db_repository: UsersDatabaseRepositoryABC = Depends()):
+    async def get_user_files_service(db_repository: UserFilesDatabaseRepositoryABC = Depends()):
         return UserFilesService(db_repository)
 
     @staticmethod
