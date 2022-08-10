@@ -12,9 +12,13 @@ from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
 from chat.api.filters.messages import MessagesFilterSetABC
+from chat.api.pagination.chat_rooms import ChatRoomsPaginatorABC
 from chat.api.pagination.messages import MessagesPaginatorABC
+from chat.database.repository.chat_rooms import ChatRoomsDatabaseRepositoryABC
 from chat.database.repository.messages import MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC
+from chat.dependencies.chat_rooms import ChatRoomsDependenciesProvider
 from chat.dependencies.messages import MessagesDependenciesProvider
+from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC, ChatRoomsCreateUpdateServiceABC
 from chat.services.messages import (
     MessagesRetrieveServiceABC, MessageFilesRetrieveServiceABC, MessageFilesServiceABC,
     MessagesCreateUpdateDeleteServiceABC,
@@ -43,6 +47,7 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
     dependencies_provider = FastapiDependenciesProvider(config)
     users_dependencies_provider = UsersDependenciesProvider
     messages_dependencies_provider = MessagesDependenciesProvider
+    chat_rooms_dependencies_provider = ChatRoomsDependenciesProvider
 
     return {
         AsyncSession: dependencies_provider.get_db_session,
@@ -66,6 +71,11 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         MessageFilesServiceABC: messages_dependencies_provider.get_message_files_service,
         MessagesFilterSetABC: messages_dependencies_provider.get_messages_filterset,
         MessagesPaginatorABC: messages_dependencies_provider.get_messages_paginator,
+
+        ChatRoomsDatabaseRepositoryABC: chat_rooms_dependencies_provider.get_chat_rooms_db_repository,
+        ChatRoomsRetrieveServiceABC: chat_rooms_dependencies_provider.get_chat_rooms_retrieve_service,
+        ChatRoomsCreateUpdateServiceABC: chat_rooms_dependencies_provider.get_chat_rooms_create_update_service,
+        ChatRoomsPaginatorABC: chat_rooms_dependencies_provider.get_chat_rooms_paginator,
     }
 
 

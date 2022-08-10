@@ -12,10 +12,11 @@ from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema
 from chat.api.v1.selectors.messages import get_messages_db_query
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
 from chat.dependencies import chat as chat_dependencies
-from chat.dependencies.chat_rooms import get_chat_rooms_retrieve_service
 from chat.models import Message
-from chat.services.messages import MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, \
-    MessageFilesServiceABC
+from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
+from chat.services.messages import (
+    MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesServiceABC,
+)
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from core.dependencies import EventReceiver
 from mixins.schemas import FilesSchema
@@ -30,7 +31,7 @@ async def chat_websocket_endpoint(
         request_user: User = Depends(chat_dependencies.get_request_user),
         messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
         event_receiver: EventReceiver = Depends(),
-        chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
+        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
 ):
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, messages_db_repository)
     try:

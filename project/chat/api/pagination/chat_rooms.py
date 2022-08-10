@@ -1,12 +1,18 @@
+import abc
+
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from chat.services.chat_rooms import ChatRoomsRetrieveService
-from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC
+from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
+from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC, PaginationClassABC
+
+
+class ChatRoomsPaginatorABC(PaginationClassABC, abc.ABC):
+    pass
 
 
 class ChatRoomsPaginationDatabaseObjectsRetrieverStrategy(PaginationDatabaseObjectsRetrieverStrategyABC):
-    def __init__(self, chat_rooms_service: ChatRoomsRetrieveService):
+    def __init__(self, chat_rooms_service: ChatRoomsRetrieveServiceABC):
         self.chat_rooms_service = chat_rooms_service
 
     async def get_many(self, db_query: Select) -> list[User]:
