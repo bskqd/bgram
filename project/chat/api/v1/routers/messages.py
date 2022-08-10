@@ -5,16 +5,17 @@ from fastapi import (
 )
 
 from accounts.models import User
-from chat.api.dependencies import chat as chat_dependencies
-from chat.api.dependencies.chat_rooms import get_chat_rooms_retrieve_service
-from chat.api.dependencies.messages import (
-    get_messages_filterset, get_messages_db_repository, get_messages_create_update_delete_service,
-    get_messages_retrieve_service, get_message_files_service, get_messages_paginator
-)
+from chat.api.filters.messages import MessagesFilterSetABC
+from chat.api.pagination.messages import MessagesPaginatorABC
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.api.v1.selectors.messages import get_messages_db_query
+from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
+from chat.dependencies import chat as chat_dependencies
+from chat.dependencies.chat_rooms import get_chat_rooms_retrieve_service
 from chat.models import Message
+from chat.services.messages import MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, \
+    MessageFilesServiceABC
 from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
 from core.dependencies import EventReceiver
 from mixins.schemas import FilesSchema
@@ -27,7 +28,7 @@ async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
         request_user: User = Depends(chat_dependencies.get_request_user),
-        messages_db_repository=Depends(get_messages_db_repository),
+        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
         event_receiver: EventReceiver = Depends(),
         chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
 ):
@@ -49,8 +50,8 @@ async def chat_websocket_endpoint(
 async def list_messages_view(
         chat_room_id: int,
         request: Request,
-        filterset=Depends(get_messages_filterset),
-        paginator=Depends(get_messages_paginator),
+        filterset: MessagesFilterSetABC = Depends(),
+        paginator: MessagesPaginatorABC = Depends(),
 ):
     return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(request, chat_room_id)))
 
@@ -62,8 +63,8 @@ async def create_message_view(
         text: str = Form(...),
         files: Optional[Tuple[UploadFile]] = None,
         request_user: User = Depends(),
-        messages_db_repository=Depends(get_messages_db_repository),
-        messages_create_update_delete_service=Depends(get_messages_create_update_delete_service),
+        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -81,9 +82,9 @@ async def update_message_view(
         request: Request,
         message_data: UpdateMessageSchema,
         request_user: User = Depends(),
-        messages_db_repository=Depends(get_messages_db_repository),
-        messages_create_update_delete_service=Depends(get_messages_create_update_delete_service),
-        messages_retrieve_service=Depends(get_messages_retrieve_service),
+        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
+        messages_retrieve_service: MessagesRetrieveServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -93,7 +94,7 @@ async def update_message_view(
         message_ids=(message_id,),
     ).check_permissions()
     message = await messages_retrieve_service.get_one_message(
-        Message.id == message_id, db_query=get_messages_db_query(request, chat_room_id)
+        Message.id == message_id, db_query=get_messages_db_query(request, chat_room_id),
     )
     return await messages_create_update_delete_service.update_message(message, **message_data.dict(exclude_unset=True))
 
@@ -104,8 +105,8 @@ async def delete_messages_view(
         request: Request,
         message_ids: tuple[int] = Query(...),
         request_user: User = Depends(),
-        messages_db_repository=Depends(get_messages_db_repository),
-        messages_create_update_delete_service=Depends(get_messages_create_update_delete_service),
+        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -123,23 +124,23 @@ async def replace_message_photo(
         message_file_id: int,
         file: UploadFile,
         request_user: Optional[User] = Depends(),
-        message_files_db_repository=Depends(get_messages_db_repository),
-        message_files_service=Depends(get_message_files_service),
+        message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
+        message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
     await UserMessageFilesPermissions(
         request_user,
         message_file_id,
         message_files_db_repository,
     ).check_permissions()
-    return message_files_service.change_message_file(file)
+    return await message_files_service.change_message_file(file)
 
 
 @router.delete('/message/{message_id}/message_files/{message_file_id}')
 async def delete_message_photo(
         message_file_id: int,
         request_user: Optional[User] = Depends(),
-        message_files_db_repository=Depends(get_messages_db_repository),
-        message_files_service=Depends(get_message_files_service),
+        message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
+        message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
     await UserMessageFilesPermissions(request_user, message_file_id, message_files_db_repository).check_permissions()
     await message_files_service.delete_message_file()

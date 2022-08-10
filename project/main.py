@@ -11,6 +11,14 @@ from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserF
 from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
+from chat.api.filters.messages import MessagesFilterSetABC
+from chat.api.pagination.messages import MessagesPaginatorABC
+from chat.database.repository.messages import MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC
+from chat.dependencies.messages import MessagesDependenciesProvider
+from chat.services.messages import (
+    MessagesRetrieveServiceABC, MessageFilesRetrieveServiceABC, MessageFilesServiceABC,
+    MessagesCreateUpdateDeleteServiceABC,
+)
 from core.config import settings
 from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
 from core.middleware.authentication import JWTAuthenticationMiddleware
@@ -34,6 +42,7 @@ def create_application(dependency_overrides_factory: Callable, config: BaseSetti
 def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
     dependencies_provider = FastapiDependenciesProvider(config)
     users_dependencies_provider = UsersDependenciesProvider
+    messages_dependencies_provider = MessagesDependenciesProvider
 
     return {
         AsyncSession: dependencies_provider.get_db_session,
@@ -48,6 +57,15 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         UsersPaginatorABC: users_dependencies_provider.get_users_paginator,
         UserFilterSetABC: users_dependencies_provider.get_users_filterset,
         UserFilesServiceABC: users_dependencies_provider.get_user_files_service,
+
+        MessagesDatabaseRepositoryABC: messages_dependencies_provider.get_messages_db_repository,
+        MessageFilesDatabaseRepositoryABC: messages_dependencies_provider.get_message_files_db_repository,
+        MessagesRetrieveServiceABC: messages_dependencies_provider.get_messages_retrieve_service,
+        MessagesCreateUpdateDeleteServiceABC: messages_dependencies_provider.get_messages_create_update_delete_service,
+        MessageFilesRetrieveServiceABC: messages_dependencies_provider.get_message_files_retrieve_service,
+        MessageFilesServiceABC: messages_dependencies_provider.get_message_files_service,
+        MessagesFilterSetABC: messages_dependencies_provider.get_messages_filterset,
+        MessagesPaginatorABC: messages_dependencies_provider.get_messages_paginator,
     }
 
 

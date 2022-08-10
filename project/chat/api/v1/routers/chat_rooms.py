@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC
-from chat.api.dependencies.chat_rooms import (
+from chat.dependencies.chat_rooms import (
     get_chat_rooms_paginator, get_chat_rooms_retrieve_service, get_chat_rooms_create_update_service,
 )
 from chat.api.permissions.chat_rooms import ChatRoomPermission

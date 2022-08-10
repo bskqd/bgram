@@ -22,9 +22,9 @@ async def get_chat_rooms_create_update_service(db_repository=Depends(get_chat_ro
 
 async def get_chat_rooms_paginator(
         request: Request,
-        chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service)
+        chat_rooms_retrieve_service=Depends(get_chat_rooms_retrieve_service),
 ) -> DefaultPaginationClass:
     chat_rooms_db_objects_retriever_strategy = ChatRoomsPaginationDatabaseObjectsRetrieverStrategy(
-        chat_rooms_retrieve_service
+        chat_rooms_retrieve_service,
     )
     return DefaultPaginationClass(request, chat_rooms_db_objects_retriever_strategy)

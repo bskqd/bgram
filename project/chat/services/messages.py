@@ -10,10 +10,11 @@ from chat.events.messages import message_created_event, message_updated_event, m
 from chat.models import Message, MessagePhoto
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies import EventPublisher
-from core.services.files import FilesService, FilesServiceABC
+from core.services.files import FilesService
+from mixins.models import PhotoABC
 
 
-class IMessagesRetrieveService(abc.ABC):
+class MessagesRetrieveServiceABC(abc.ABC):
     @abc.abstractmethod
     async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
         pass
@@ -27,7 +28,7 @@ class IMessagesRetrieveService(abc.ABC):
         pass
 
 
-class MessagesRetrieveService(IMessagesRetrieveService):
+class MessagesRetrieveService(MessagesRetrieveServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
@@ -47,7 +48,7 @@ class MessagesRetrieveService(IMessagesRetrieveService):
         return await self.db_repository.count(*args)
 
 
-class IMessagesCreateUpdateDeleteService(abc.ABC):
+class MessagesCreateUpdateDeleteServiceABC(abc.ABC):
     @abc.abstractmethod
     async def create_message(self, *args, **kwargs) -> Message:
         pass
@@ -61,7 +62,7 @@ class IMessagesCreateUpdateDeleteService(abc.ABC):
         pass
 
 
-class MessagesCreateUpdateDeleteService(IMessagesCreateUpdateDeleteService):
+class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
     def __init__(
             self,
             db_repository: BaseDatabaseRepository,
@@ -110,13 +111,13 @@ class MessagesCreateUpdateDeleteService(IMessagesCreateUpdateDeleteService):
         return message_ids
 
 
-class IMessageFilesRetrieveService(abc.ABC):
+class MessageFilesRetrieveServiceABC(abc.ABC):
     @abc.abstractmethod
     async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
         pass
 
 
-class MessageFilesRetrieveService(IMessageFilesRetrieveService):
+class MessageFilesRetrieveService(MessageFilesRetrieveServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
@@ -126,11 +127,17 @@ class MessageFilesRetrieveService(IMessageFilesRetrieveService):
         return await self.db_repository.get_one(*args)
 
 
-class MessageFilesServiceABC(FilesServiceABC, abc.ABC):
-    pass
+class MessageFilesServiceABC(abc.ABC):
+    @abc.abstractmethod
+    async def change_message_file(self, replacement_file: UploadFile) -> PhotoABC:
+        pass
+
+    @abc.abstractmethod
+    async def delete_message_file(self):
+        pass
 
 
-class MessageFilesService(FilesService, MessageFilesServiceABC):
+class MessageFilesService(MessageFilesServiceABC, FilesService):
     file_model = MessagePhoto
 
     def __init__(
