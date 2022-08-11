@@ -23,9 +23,11 @@ from chat.services.messages import (
     MessagesRetrieveServiceABC, MessageFilesRetrieveServiceABC, MessageFilesServiceABC,
     MessagesCreateUpdateDeleteServiceABC,
 )
+from core.authentication.middlewares import JWTAuthenticationMiddleware
+from core.authentication.services.authentication import AuthenticationServiceABC
+from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
 from core.config import settings
 from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
-from core.middleware.authentication import JWTAuthenticationMiddleware
 from core.routers import v1
 
 
@@ -51,6 +53,9 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
 
     return {
         AsyncSession: dependencies_provider.get_db_session,
+        AuthenticationServiceABC: dependencies_provider.get_authentication_service,
+        JWTAuthenticationServiceABC: dependencies_provider.get_jwt_authentication_service,
+
         User: dependencies_provider.get_request_user,
         EventPublisher: dependencies_provider.get_event_publisher,
         EventReceiver: dependencies_provider.get_event_receiver,

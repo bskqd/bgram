@@ -3,6 +3,7 @@ from pydantic import BaseSettings
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+from core.authentication.services.jwt_authentication import JWTAuthenticationService
 from core.contrib.redis import redis_client
 
 
@@ -33,6 +34,14 @@ class FastapiDependenciesProvider:
     async def get_db_session(self):
         async with (session := self.db_sessionmaker()):
             yield session
+
+    @staticmethod
+    async def get_authentication_service():
+        return JWTAuthenticationService
+
+    @staticmethod
+    async def get_jwt_authentication_service():
+        return JWTAuthenticationService
 
     @staticmethod
     async def get_request_user(request: Request):

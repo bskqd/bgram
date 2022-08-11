@@ -1,3 +1,4 @@
+import abc
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Iterable
@@ -9,13 +10,30 @@ from sqlalchemy.sql.expression import true
 from starlette import status
 
 from accounts.models import User
+from core.authentication.services.authentication import AuthenticationServiceABC
 from core.config import settings
 from core.database.base import DatabaseSession
 
 VALID_TOKEN_TYPES = frozenset([settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE])
 
 
-class JWTAuthenticationServices:
+class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
+    @staticmethod
+    @abc.abstractmethod
+    async def create_token(user_id: int, token_type: str) -> str:
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    async def validate_token(
+            cls,
+            token: str,
+            valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES,
+    ) -> User:
+        pass
+
+
+class JWTAuthenticationService(JWTAuthenticationServiceABC):
     """
     Service class for user authentication.
     """
@@ -23,7 +41,7 @@ class JWTAuthenticationServices:
     credentials_exception = HTTPException(
         status_code=401,
         detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'}
+        headers={'WWW-Authenticate': 'Bearer'},
     )
 
     @staticmethod
@@ -32,7 +50,7 @@ class JWTAuthenticationServices:
             'user_id': user_id,
             'exp': datetime.now() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
             'token_type': token_type,
-            'jti': uuid.uuid4().hex
+            'jti': uuid.uuid4().hex,
         }
         return jwt.encode(payload, settings.JWT_SECRET_KEY)
 
@@ -50,7 +68,7 @@ class JWTAuthenticationServices:
     async def validate_token(
             cls,
             token: str,
-            valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES
+            valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES,
     ) -> User:
         try:
             payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
