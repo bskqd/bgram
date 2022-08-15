@@ -39,6 +39,8 @@ services:
     depends_on:
       - app
       - redis
+    networks:
+      - app-network
 
 networks:
   app-network:
