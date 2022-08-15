@@ -3,23 +3,14 @@ services:
     build: .
     restart: on-failure
     depends_on:
-      - redis
       - db
+      - redis
     env_file:
       - ./.env
     ports:
       - '8000:8000'
     networks:
       - app-network
-  redis:
-    image: redis:6.2-alpine
-    restart: always
-    ports:
-      - '6379:6379'
-    networks:
-      - app-network
-    volumes:
-      - redis:/var/lib/redis/data
   db:
     image: postgres:14.1-alpine
     restart: always
@@ -32,7 +23,22 @@ services:
     networks:
       - app-network
     volumes:
-      - db:/var/lib/postgresql/data
+      - /var/bgram_postgresql:/var/lib/postgresql/data
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    networks:
+      - app-network
+    volumes:
+      - /var/bgram_redis:/var/lib/redis/data
+  celery-worker:
+    build: .
+    command: celery -A core.celery.celery_app:celery worker -l info
+    depends_on:
+      - app
+      - redis
 
 networks:
   app-network:
