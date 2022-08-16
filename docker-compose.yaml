@@ -9,6 +9,8 @@ services:
       - ./.env
     ports:
       - '8000:8000'
+    links:
+      - redis
     networks:
       - app-network
   db:
@@ -29,15 +31,21 @@ services:
     restart: always
     ports:
       - '6379:6379'
+    expose:
+      - '6379'
     networks:
       - app-network
     volumes:
       - /var/bgram_redis:/var/lib/redis/data
   celery-worker:
     build: .
-    command: celery -A core.celery.celery_app:celery worker -l info
+    command: celery -A core.celery.celery_app:bgram_celery_app worker -l info
     depends_on:
       - app
+      - redis
+    env_file:
+      - ./.env
+    links:
       - redis
     networks:
       - app-network
