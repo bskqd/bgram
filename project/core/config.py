@@ -30,7 +30,7 @@ class Settings(BaseSettings):
         MAIL_TLS=True,
         MAIL_SSL=False,
         USE_CREDENTIALS=True,
-        TEMPLATE_FOLDER=os.path.join(BASE_DIR, 'notifications', 'templates', 'email')
+        TEMPLATE_FOLDER=os.path.join(BASE_DIR, 'notifications', 'templates', 'email'),
     )
 
     JWT_TOKEN_TYPE_NAME: str = 'Bearer'
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     PWD_CONTEXT: CryptContext = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
-    MEDIA_PATH: str = 'media/'
+    MEDIA_PATH: str = os.getenv('MEDIA_PATH')
     MEDIA_URL: str = 'media'
 
 

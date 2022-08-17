@@ -11,6 +11,8 @@ services:
       - '8000:8000'
     links:
       - redis
+    volumes:
+      - ${MEDIA_PATH}:${MEDIA_PATH}
     networks:
       - app-network
   db:
@@ -47,12 +49,16 @@ services:
       - ./.env
     links:
       - redis
+    volumes:
+      - ${MEDIA_PATH}:${MEDIA_PATH}
     networks:
       - app-network
 
 networks:
   app-network:
 volumes:
+  app:
+    driver: local
   redis:
     driver: local
   db:
