@@ -53,17 +53,6 @@ services:
       - ${MEDIA_PATH}:${MEDIA_PATH}
     networks:
       - app-network
-  celery-beat:
-    build: .
-    command: celery -A core.celery.celery_app:bgram_celery_app beat -l info
-    depends_on:
-      - celery-worker
-    env_file:
-      - ./.env
-    links:
-      - redis
-    networks:
-      - app-network
 
 networks:
   app-network:
