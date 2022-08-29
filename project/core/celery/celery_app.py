@@ -1,11 +1,8 @@
 import asyncio
 
 from celery import Celery
-from dotenv import load_dotenv
 
 from core.celery.utils import run_task_asynchronously
-
-load_dotenv()
 
 bgram_celery_app = Celery('bgram_celery_app')
 

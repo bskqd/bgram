@@ -53,6 +53,17 @@ services:
       - ${MEDIA_PATH}:${MEDIA_PATH}
     networks:
       - app-network
+  tasks_scheduler:
+    build: .
+    command: python -m core.tasks_scheduling.scheduler
+    depends_on:
+      - celery-worker
+    env_file:
+      - ./.env
+    links:
+      - redis
+    networks:
+      - app-network
 
 networks:
   app-network:

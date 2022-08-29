@@ -27,9 +27,9 @@ from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
 from core.config import settings
-from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider, Scheduler
+from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
 from core.routers import v1
-from core.scheduler import run_scheduler
+from core.tasks_scheduling.dependencies import TaskSchedulerDependenciesProvider, TaskSchedulerABC
 
 
 def create_application(dependency_overrides_factory: Callable, config: BaseSettings) -> FastAPI:
@@ -43,13 +43,12 @@ def create_application(dependency_overrides_factory: Callable, config: BaseSetti
 
     application.dependency_overrides = dependency_overrides_factory(config)
 
-    run_scheduler()
-
     return application
 
 
 def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
     dependencies_provider = FastapiDependenciesProvider(config)
+    tasks_scheduler_dependencies_provider = TaskSchedulerDependenciesProvider
     users_dependencies_provider = UsersDependenciesProvider
     messages_dependencies_provider = MessagesDependenciesProvider
     chat_rooms_dependencies_provider = ChatRoomsDependenciesProvider
@@ -62,7 +61,8 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         User: dependencies_provider.get_request_user,
         EventPublisher: dependencies_provider.get_event_publisher,
         EventReceiver: dependencies_provider.get_event_receiver,
-        Scheduler: dependencies_provider.get_scheduler,
+
+        TaskSchedulerABC: tasks_scheduler_dependencies_provider.get_tasks_scheduler,
 
         UsersDatabaseRepositoryABC: users_dependencies_provider.get_users_db_repository,
         UserFilesDatabaseRepositoryABC: users_dependencies_provider.get_user_files_db_repository,

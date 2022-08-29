@@ -1,9 +1,6 @@
-import asyncio
-from datetime import timedelta
+from datetime import datetime
 
-from apscheduler.triggers.date import DateTrigger, datetime
 from fastapi import APIRouter, UploadFile, File, Depends
-from pytz import utc
 
 from accounts.api.filters.users import UserFilterSetABC
 from accounts.api.pagination.users import UsersPaginatorABC
@@ -12,28 +9,14 @@ from accounts.api.v1.schemas.users import PaginatedUsersListSchema
 from accounts.api.v1.selectors.users import get_users_db_query
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
-from core.dependencies import Scheduler
-from core.scheduler import celery_task
+from core.tasks_scheduling.dependencies import TaskSchedulerABC
 
 router = APIRouter()
 
 
-@router.get('/test_beat')
-async def test_beat(scheduler: Scheduler = Depends()):
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        None,
-        scheduler.add_job,
-        celery_task,
-        DateTrigger(
-            run_date=datetime.now() - timedelta(hours=3),
-            timezone=utc,
-        ),
-        None,
-        None,
-        None,
-        'core.celery.celery_app.test',
-    )
+@router.get('/test_scheduler')
+async def test_scheduler(tasks_scheduler: TaskSchedulerABC = Depends()):
+    await tasks_scheduler.add_task('core.celery.celery_app.test', datetime.utcnow())
     return ''
 
 

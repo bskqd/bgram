@@ -5,27 +5,21 @@ from sqlalchemy.orm import sessionmaker
 
 from core.authentication.services.jwt_authentication import JWTAuthenticationService
 from core.contrib.redis import redis_client
-from core.scheduler import bgram_scheduler
 
 
 class EventPublisher:
-    def publish(self, *args):
+    async def publish(self, *args):
         pass
 
 
 class EventReceiver:
-    def subscribe(self, *args, **kwargs):
+    async def subscribe(self, *args, **kwargs):
         pass
 
-    def unsubscribe(self, *args):
+    async def unsubscribe(self, *args):
         pass
 
-    def listen(self):
-        pass
-
-
-class Scheduler:
-    def add_job(self, *args, **kwargs):
+    async def listen(self):
         pass
 
 
@@ -60,7 +54,3 @@ class FastapiDependenciesProvider:
     @staticmethod
     async def get_event_receiver():
         return redis_client.pubsub()
-
-    @staticmethod
-    async def get_scheduler():
-        return bgram_scheduler
