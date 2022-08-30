@@ -7,9 +7,12 @@ from starlette.staticfiles import StaticFiles
 
 from accounts.api.filters.users import UserFilterSetABC
 from accounts.api.pagination.users import UsersPaginatorABC
+from accounts.database.repository.authorization import ConfirmationTokenDatabaseRepositoryABC
 from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserFilesDatabaseRepositoryABC
+from accounts.dependencies.authorization import AuthorizationDependenciesProvider
 from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
+from accounts.services.authorization import ConfirmationTokensServiceABC
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
 from chat.api.filters.messages import MessagesFilterSetABC
 from chat.api.pagination.chat_rooms import ChatRoomsPaginatorABC
@@ -50,6 +53,7 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
     dependencies_provider = FastapiDependenciesProvider(config)
     tasks_scheduler_dependencies_provider = TaskSchedulerDependenciesProvider
     users_dependencies_provider = UsersDependenciesProvider
+    authorization_dependencies_provider = AuthorizationDependenciesProvider
     messages_dependencies_provider = MessagesDependenciesProvider
     chat_rooms_dependencies_provider = ChatRoomsDependenciesProvider
 
@@ -71,6 +75,10 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         UsersPaginatorABC: users_dependencies_provider.get_users_paginator,
         UserFilterSetABC: users_dependencies_provider.get_users_filterset,
         UserFilesServiceABC: users_dependencies_provider.get_user_files_service,
+
+        ConfirmationTokenDatabaseRepositoryABC:
+            authorization_dependencies_provider.get_confirmation_token_db_repository,
+        ConfirmationTokensServiceABC: authorization_dependencies_provider.get_confirmation_token_service,
 
         MessagesDatabaseRepositoryABC: messages_dependencies_provider.get_messages_db_repository,
         MessageFilesDatabaseRepositoryABC: messages_dependencies_provider.get_message_files_db_repository,

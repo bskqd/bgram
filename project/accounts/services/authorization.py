@@ -1,9 +1,22 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+import abc
 
 from accounts.models import User, EmailConfirmationToken
-from core.database.repository import SQLAlchemyDatabaseRepository
+from core.database.repository import BaseDatabaseRepository
 
 
-async def create_email_confirmation_token(user: User, db_session: AsyncSession) -> EmailConfirmationToken:
-    token = EmailConfirmationToken(user=user)
-    return await SQLAlchemyDatabaseRepository(EmailConfirmationToken, db_session).create(token)
+class ConfirmationTokensServiceABC(abc.ABC):
+    @abc.abstractmethod
+    async def create_confirmation_token(self, user: User) -> EmailConfirmationToken:
+        pass
+
+
+class EmailConfirmationTokensService:
+    def __init__(self, db_repository: BaseDatabaseRepository):
+        self.db_repository = db_repository
+
+    async def create_confirmation_token(self, user: User) -> EmailConfirmationToken:
+        token = EmailConfirmationToken(user=user)
+        token = await self.db_repository.create(token)
+        await self.db_repository.commit()
+        await self.db_repository.refresh(token)
+        return token

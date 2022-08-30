@@ -26,7 +26,7 @@ class BaseDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, **kwargs):
+    async def create(self, *args, **kwargs):
         pass
 
     @abstractmethod
