@@ -5,8 +5,8 @@ from sqlalchemy import select
 
 from accounts.models import User
 from chat.models import chatroom_members_association_table, Message, MessagePhoto
-from core.database.repository import BaseDatabaseRepository
 from core import permissions as mixins_permissions
+from core.database.repository import BaseDatabaseRepository
 from core.permissions import UserIsAuthenticatedPermission
 
 
@@ -37,28 +37,26 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
             await self.check_message_author()
 
     async def check_user_is_member_of_chat_room(self):
-        self.db_repository.db_query = select(
+        is_user_member_of_chat_room_query = select(
             chatroom_members_association_table.c.room_id
         ).where(
             chatroom_members_association_table.c.user_id == self.request_user.id,
             chatroom_members_association_table.c.room_id == self.chat_room_id
         )
-        if not await self.db_repository.exists():
+        if not await self.db_repository.exists(db_query=is_user_member_of_chat_room_query):
             raise self.permission_denied_exception
-        self.db_repository.db_query = None
 
     async def check_message_author(self):
         if not self.message_ids:
             raise self.permission_denied_exception
-        self.db_repository.db_query = select(
+        is_user_message_author_query = select(
             Message
         ).where(
             Message.id.in_(self.message_ids),
             Message.author_id == self.request_user.id
         )
-        if not await self.db_repository.exists():
+        if not await self.db_repository.exists(db_query=is_user_message_author_query):
             raise self.permission_denied_exception
-        self.db_repository.db_query = None
 
 
 class UserMessageFilesPermissions(mixins_permissions.BasePermission):
@@ -77,7 +75,7 @@ class UserMessageFilesPermissions(mixins_permissions.BasePermission):
         await self.check_message_file_message_author()
 
     async def check_message_file_message_author(self):
-        self.db_repository.db_query = select(
+        is_request_user_message_author_query = select(
             MessagePhoto.id
         ).join(
             Message
@@ -85,7 +83,5 @@ class UserMessageFilesPermissions(mixins_permissions.BasePermission):
             MessagePhoto.id == self.message_file_id,
             Message.author_id == self.request_user.id
         )
-        request_user_is_message_author = await self.db_repository.exists()
-        if not request_user_is_message_author:
+        if not await self.db_repository.exists(db_query=is_request_user_message_author_query):
             raise self.permission_denied_exception
-        self.db_repository.db_query = None

@@ -1,10 +1,15 @@
+import random
+
 from sqlalchemy import Column, String, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
-from accounts.utils.authorization import generate_token
 from mixins.models import DateTimeABC
 
 __all__ = ['EmailConfirmationToken']
+
+
+def generate_token() -> str:
+    return str(random.randint(1000, 9999))
 
 
 class EmailConfirmationToken(DateTimeABC):

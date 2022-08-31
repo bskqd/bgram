@@ -33,19 +33,13 @@ class MessagesRetrieveService(MessagesRetrieveServiceABC):
         self.db_repository = db_repository
 
     async def get_one_message(self, *args, db_query: Optional[Select] = None) -> Message:
-        if db_query is not None:
-            self.db_repository.db_query = db_query
-        return await self.db_repository.get_one(*args)
+        return await self.db_repository.get_one(*args, db_query=db_query)
 
     async def get_many_messages(self, *args, db_query: Optional[Select] = None) -> list[Message]:
-        if db_query is not None:
-            self.db_repository.db_query = db_query
-        return await self.db_repository.get_many(*args)
+        return await self.db_repository.get_many(*args, db_query=db_query)
 
     async def count_messages(self, *args, db_query: Optional[Select] = None) -> int:
-        if db_query is not None:
-            self.db_repository.db_query = db_query
-        return await self.db_repository.count(*args)
+        return await self.db_repository.count(*args, db_query=db_query)
 
 
 class MessagesCreateUpdateDeleteServiceABC(abc.ABC):
@@ -90,8 +84,11 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         if files:
             for file in files:
                 await self.message_files_service.create_object_file(file, message_id=message_id)
-        self.db_repository.db_query = select(Message).options(joinedload(Message.author), joinedload(Message.photos))
-        created_message = await self.db_repository.get_one(Message.id == message_id)
+        created_message = await self.db_repository.get_one(
+            db_query=select(Message).options(
+                joinedload(Message.author), joinedload(Message.photos)
+            ).where(Message.id == message_id)
+        )
         await message_created_event(self.event_publisher, created_message)
         return created_message
 
@@ -122,12 +119,14 @@ class MessageFilesRetrieveService(MessageFilesRetrieveServiceABC):
         self.db_repository = db_repository
 
     async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> Message:
-        if db_query is not None:
-            self.db_repository.db_query = db_query
-        return await self.db_repository.get_one(*args)
+        return await self.db_repository.get_one(*args, db_query=db_query)
 
 
 class MessageFilesServiceABC(abc.ABC):
+    @abc.abstractmethod
+    async def create_object_file(self, file: UploadFile, **kwargs) -> PhotoABC:
+        pass
+
     @abc.abstractmethod
     async def change_message_file(self, replacement_file: UploadFile) -> PhotoABC:
         pass

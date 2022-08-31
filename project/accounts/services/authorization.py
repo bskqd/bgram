@@ -40,15 +40,14 @@ class EmailConfirmationTokensConfirmService:
         self.users_update_service = users_update_service
 
     async def confirm_confirmation_token(self, user: User, token: str):
-        self.users_db_repository.db_query = select(User).join(
+        token_is_valid_query = select(User).join(
             User.email_confirmation_tokens,
         ).where(
             User.id == user.id,
             EmailConfirmationToken.created_at >= datetime.now() - timedelta(settings.CONFIRMATION_TOKEN_VALID_HOURS),
             EmailConfirmationToken.token == token,
         )
-        is_token_valid = await self.users_db_repository.exists()
-        self.users_db_repository.db_query = None
+        is_token_valid = await self.users_db_repository.exists(db_query=token_is_valid_query)
         if not is_token_valid:
             raise InvalidConfirmationTokenException
         await self.users_update_service.update_user(user, is_active=True)
