@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     DATETIME_INPUT_OUTPUT_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-    EMAIL_CONFIRMATION_TOKEN_VALID_HOURS: int = 24
+    CONFIRMATION_TOKEN_VALID_HOURS: int = 24
     MAIL_CONFIG: ConnectionConfig = ConnectionConfig(
         MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
         MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),

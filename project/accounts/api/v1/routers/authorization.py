@@ -1,14 +1,13 @@
-from datetime import datetime, timedelta
-
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from sqlalchemy import select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from accounts.api.v1.schemas import authentication as authorization_schemas
 from accounts.api.v1.schemas import users as user_schemas
-from accounts.models import User, EmailConfirmationToken
-from accounts.services.authorization import ConfirmationTokensServiceABC
-from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
+from accounts.models import User
+from accounts.services.authorization import ConfirmationTokensCreateServiceABC, ConfirmationTokensConfirmServiceABC
+from accounts.services.exceptions.authorization import InvalidConfirmationTokenException
+from accounts.services.users import UsersCreateUpdateServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
 from core.config import settings
 from notifications.background_tasks.email import send_email
@@ -21,7 +20,7 @@ async def registration_view(
         user: user_schemas.UserCreateSchema,
         background_tasks: BackgroundTasks,
         users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
-        confirmation_token_service: ConfirmationTokensServiceABC = Depends(),
+        confirmation_tokens_create_service: ConfirmationTokensCreateServiceABC = Depends(),
 ) -> str:
     user_data = user.dict()
     user_data['is_active'] = False
@@ -29,7 +28,7 @@ async def registration_view(
     email = user_data.pop('email')
     password = user_data.pop('password')
     user = await users_create_update_service.create_user(nickname, email, password, **user_data)
-    token = await confirmation_token_service.create_confirmation_token(user)
+    token = await confirmation_tokens_create_service.create_confirmation_token(user)
     email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
     send_email(
         background_tasks, 'email_confirmation.html', 'Please confirm your email', user.email, template_body=email_data,
@@ -37,21 +36,17 @@ async def registration_view(
     return 'Registration is successful, confirm your email.'
 
 
-@router.post('/confirm_email')
-async def confirm_email_view(
-        token: authorization_schemas.EmailConfirmationSchema,
-        users_retrieve_service: UsersRetrieveServiceABC = Depends(),
-        users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
+@router.post('/confirm_token')
+async def confirm_token_view(
+        token_data: authorization_schemas.TokenConfirmationSchema,
+        request_user: User,
+        confirmation_tokens_confirm_service: ConfirmationTokensConfirmServiceABC = Depends(),
 ) -> str:
-    get_user_query = select(User).join(
-        User.email_confirmation_tokens,
-    ).where(
-        EmailConfirmationToken.created_at >= datetime.now() - timedelta(settings.EMAIL_CONFIRMATION_TOKEN_VALID_HOURS),
-        EmailConfirmationToken.token == token.token,
-    )
-    user = await users_retrieve_service.get_one_user(db_query=get_user_query)
-    await users_create_update_service.update_user(user, is_active=True)
-    return 'Your email is successfully confirmed.'
+    try:
+        await confirmation_tokens_confirm_service.confirm_confirmation_token(request_user, token_data.token)
+    except InvalidConfirmationTokenException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return 'Token is successfully confirmed.'
 
 
 @router.post('/login')

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class EmailConfirmationSchema(BaseModel):
+class TokenConfirmationSchema(BaseModel):
     token: str
 
 

@@ -12,7 +12,7 @@ from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserF
 from accounts.dependencies.authorization import AuthorizationDependenciesProvider
 from accounts.dependencies.users import UsersDependenciesProvider
 from accounts.models import User
-from accounts.services.authorization import ConfirmationTokensServiceABC
+from accounts.services.authorization import ConfirmationTokensCreateServiceABC, ConfirmationTokensConfirmServiceABC
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
 from chat.api.filters.messages import MessagesFilterSetABC
 from chat.api.pagination.chat_rooms import ChatRoomsPaginatorABC
@@ -78,7 +78,8 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
 
         ConfirmationTokenDatabaseRepositoryABC:
             authorization_dependencies_provider.get_confirmation_token_db_repository,
-        ConfirmationTokensServiceABC: authorization_dependencies_provider.get_confirmation_token_service,
+        ConfirmationTokensCreateServiceABC: authorization_dependencies_provider.get_confirmation_token_create_service,
+        ConfirmationTokensConfirmServiceABC: authorization_dependencies_provider.get_confirmation_token_confirm_service,
 
         MessagesDatabaseRepositoryABC: messages_dependencies_provider.get_messages_db_repository,
         MessageFilesDatabaseRepositoryABC: messages_dependencies_provider.get_message_files_db_repository,
