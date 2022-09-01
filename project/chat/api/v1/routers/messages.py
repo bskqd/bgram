@@ -39,6 +39,7 @@ async def chat_websocket_endpoint(
     except HTTPException:
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
+    # TODO: goes for an infinite loop, try to change with "await, first completed"
     await chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_retrieve_service)
     try:
         await websocket.receive()
