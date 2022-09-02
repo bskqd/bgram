@@ -16,12 +16,12 @@ router = APIRouter()
 
 @router.post('/registration')
 async def registration_view(
-        user: user_schemas.UserCreateSchema,
+        user_data: user_schemas.UserCreateSchema,
         background_tasks: BackgroundTasks,
         users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
         confirmation_tokens_create_service: ConfirmationTokensCreateServiceABC = Depends(),
 ) -> str:
-    user_data = user.dict()
+    user_data = user_data.dict()
     user_data['is_active'] = False
     nickname = user_data.pop('nickname')
     email = user_data.pop('email')
@@ -65,10 +65,10 @@ async def login_view(
 
 @router.post('/refresh_token')
 async def refresh_token_view(
-        token: authorization_schemas.RefreshTokenSchema,
+        token_data: authorization_schemas.RefreshTokenSchema,
         jwt_authentication_service: JWTAuthenticationServiceABC = Depends(),
 ) -> dict[str, str]:
-    user = await jwt_authentication_service.validate_token(token.refresh_token, [settings.JWT_REFRESH_TOKEN_TYPE])
+    user = await jwt_authentication_service.validate_token(token_data.refresh_token, [settings.JWT_REFRESH_TOKEN_TYPE])
     if user:
         access_token = await jwt_authentication_service.create_token(user.id, settings.JWT_ACCESS_TOKEN_TYPE)
         return {'access_token': access_token}
