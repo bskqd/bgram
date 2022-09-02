@@ -15,28 +15,25 @@ class WebSocketConnection:
 
 
 class ChatRoomsWebSocketConnectionManager:
-    async def connect(
-            self,
-            websocket_connection: WebSocketConnection,
-            event_receiver: EventReceiver,
-            chat_rooms_retrieve_service,
-    ):
-        await websocket_connection.websocket.accept()
-        chat_room_ids = await chat_rooms_retrieve_service.get_user_chat_room_ids(websocket_connection.user)
-        await event_receiver.subscribe(*(f'chat_room:{chat_room_id}' for chat_room_id in chat_room_ids))
-        async for message in event_receiver.listen():
+    def __init__(self, websocket_connection: WebSocketConnection, event_receiver: EventReceiver):
+        self.websocket_connection = websocket_connection
+        self.event_receiver = event_receiver
+
+    async def connect(self, chat_rooms_retrieve_service):
+        await self.websocket_connection.websocket.accept()
+        chat_room_ids = await chat_rooms_retrieve_service.get_user_chat_room_ids(self.websocket_connection.user)
+        await self.event_receiver.subscribe(*(f'chat_room:{chat_room_id}' for chat_room_id in chat_room_ids))
+        async for message in self.event_receiver.listen():
             if message and message.get('type') != 'subscribe' and (data := message.get('data')):
-                await self.send_personal_message(websocket_connection, json.loads(data.decode('utf-8')))
+                await self.send_personal_message(json.loads(data.decode('utf-8')))
 
-    async def disconnect(self, websocket_connection: WebSocketConnection, event_receiver: EventReceiver):
-        await websocket_connection.websocket.close()
-        await event_receiver.unsubscribe()
+    async def disconnect(self):
+        await self.websocket_connection.websocket.close()
+        await self.event_receiver.unsubscribe()
 
-    async def broadcast(self, message: dict, chat_room_id: int, event_publisher: EventPublisher):
+    @classmethod
+    async def broadcast(cls, message: dict, chat_room_id: int, event_publisher: EventPublisher):
         await event_publisher.publish(f'chat_room:{chat_room_id}', json.dumps(message))
 
-    async def send_personal_message(self, websocket_connection: WebSocketConnection, message: dict):
-        await websocket_connection.websocket.send_json(message)
-
-
-chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager()
+    async def send_personal_message(self, message: dict):
+        await self.websocket_connection.websocket.send_json(message)

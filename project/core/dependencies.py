@@ -1,3 +1,5 @@
+from typing import AsyncIterator
+
 from fastapi import Request
 from pydantic import BaseSettings
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -19,7 +21,7 @@ class EventReceiver:
     async def unsubscribe(self, *args):
         pass
 
-    async def listen(self):
+    async def listen(self) -> AsyncIterator:
         pass
 
 

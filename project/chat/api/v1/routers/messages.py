@@ -16,7 +16,7 @@ from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
 from chat.services.messages import (
     MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesServiceABC,
 )
-from chat.websockets.chat import WebSocketConnection, chat_rooms_websocket_manager
+from chat.websockets.chat import WebSocketConnection, ChatRoomsWebSocketConnectionManager
 from core.dependencies import EventReceiver
 from mixins.schemas import FilesSchema
 
@@ -38,16 +38,15 @@ async def chat_websocket_endpoint(
     except HTTPException:
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
-    try:
-        await asyncio.wait(
-            [
-                chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_retrieve_service),
-                websocket.receive(),
-            ],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-    finally:
-        await chat_rooms_websocket_manager.disconnect(websocket_connection, event_receiver)
+    chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager(websocket_connection, event_receiver)
+    await asyncio.wait(
+        [
+            chat_rooms_websocket_manager.connect(chat_rooms_retrieve_service),
+            websocket.receive(),
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    await chat_rooms_websocket_manager.disconnect()
 
 
 @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
