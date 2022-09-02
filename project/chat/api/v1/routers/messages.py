@@ -39,13 +39,14 @@ async def chat_websocket_endpoint(
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
     chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager(websocket_connection, event_receiver)
+    await chat_rooms_websocket_manager.accept_connection()
     try:
         await asyncio.wait(
             [
-                chat_rooms_websocket_manager.connect(chat_rooms_retrieve_service),
+                chat_rooms_websocket_manager.receive_messages(chat_rooms_retrieve_service),
                 websocket.receive(),
             ],
-            return_when=asyncio.FIRST_EXCEPTION,
+            return_when=asyncio.FIRST_COMPLETED,
         )
     finally:
         await chat_rooms_websocket_manager.disconnect()

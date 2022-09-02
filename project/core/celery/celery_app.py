@@ -11,7 +11,7 @@ bgram_celery_app.config_from_object('core.celery.celeryconfig')
 bgram_celery_app.autodiscover_tasks(['core.celery'])
 
 
-@bgram_celery_app.on_after_finalize.connect
+@bgram_celery_app.on_after_finalize.receive_messages
 def setup_periodic_tasks(sender, **kwargs):
     pass
 

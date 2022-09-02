@@ -7,8 +7,10 @@ from chat.models import ChatRoom, chatroom_members_association_table, ChatRoomPh
 from core.config import settings
 from core.database.base import engine, Base
 
-__all__ = [EmailConfirmationToken, User, UserPhoto, ChatRoom, chatroom_members_association_table, ChatRoomPhoto,
-           Message, MessagePhoto]
+__all__ = [
+    EmailConfirmationToken, User, UserPhoto, ChatRoom, chatroom_members_association_table, ChatRoomPhoto,
+    Message, MessagePhoto,
+]
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -68,7 +70,7 @@ async def run_migrations_online():
         with context.begin_transaction():
             context.run_migrations()
 
-    async with engine.connect() as connection:
+    async with engine.receive_messages() as connection:
         await connection.run_sync(do_migrations)
 
 
