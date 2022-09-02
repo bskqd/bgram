@@ -1,8 +1,7 @@
+import asyncio
 from typing import Optional, Tuple
 
-from fastapi import (
-    APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, Form, Request, Query,
-)
+from fastapi import APIRouter, Depends, WebSocket, HTTPException, UploadFile, Form, Request, Query
 
 from accounts.models import User
 from chat.api.filters.messages import MessagesFilterSetABC
@@ -39,13 +38,14 @@ async def chat_websocket_endpoint(
     except HTTPException:
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
-    # TODO: goes for an infinite loop, try to change with "await, first completed"
-    await chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_retrieve_service)
-    try:
-        await websocket.receive()
-        raise WebSocketDisconnect
-    except WebSocketDisconnect:
-        await chat_rooms_websocket_manager.disconnect(websocket_connection)
+    await asyncio.wait(
+        [
+            chat_rooms_websocket_manager.connect(websocket_connection, event_receiver, chat_rooms_retrieve_service),
+            websocket.receive(),
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    await chat_rooms_websocket_manager.disconnect(websocket_connection, event_receiver)
 
 
 @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
