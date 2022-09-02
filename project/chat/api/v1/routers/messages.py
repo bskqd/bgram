@@ -39,14 +39,16 @@ async def chat_websocket_endpoint(
         return await websocket.close()
     websocket_connection = WebSocketConnection(websocket, request_user)
     chat_rooms_websocket_manager = ChatRoomsWebSocketConnectionManager(websocket_connection, event_receiver)
-    await asyncio.wait(
-        [
-            chat_rooms_websocket_manager.connect(chat_rooms_retrieve_service),
-            websocket.receive(),
-        ],
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-    await chat_rooms_websocket_manager.disconnect()
+    try:
+        await asyncio.wait(
+            [
+                chat_rooms_websocket_manager.connect(chat_rooms_retrieve_service),
+                websocket.receive(),
+            ],
+            return_when=asyncio.FIRST_EXCEPTION,
+        )
+    finally:
+        await chat_rooms_websocket_manager.disconnect()
 
 
 @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
