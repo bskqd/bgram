@@ -50,9 +50,9 @@ class FastapiDependenciesProvider:
         return request.state.user
 
     @staticmethod
-    async def get_event_publisher():
+    async def get_event_publisher() -> EventPublisher:
         return redis_client
 
     @staticmethod
-    async def get_event_receiver():
+    async def get_event_receiver() -> EventReceiver:
         return redis_client.pubsub()

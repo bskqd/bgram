@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, UploadFile, File, Depends
 
@@ -9,14 +9,17 @@ from accounts.api.v1.schemas.users import PaginatedUsersListSchema
 from accounts.api.v1.selectors.users import get_users_db_query
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
-from core.tasks_scheduling.dependencies import TaskSchedulerABC
+from core.tasks_scheduling.dependencies import TasksScheduler
 
 router = APIRouter()
 
 
 @router.get('/test_scheduler')
-async def test_scheduler(tasks_scheduler: TaskSchedulerABC = Depends()):
-    await tasks_scheduler.add_task('core.celery.celery_app.test', datetime.utcnow())
+async def test_scheduler(tasks_scheduler: TasksScheduler = Depends()):
+    await tasks_scheduler.enqueue_job(
+        'execute_task_in_background', 'core.celery.celery_app.test',
+        _queue_name='arq:tasks_scheduling_queue', _defer_until=datetime.utcnow() + timedelta(seconds=5),
+    )
     return ''
 
 

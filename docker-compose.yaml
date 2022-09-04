@@ -55,7 +55,7 @@ services:
       - app-network
   tasks_scheduler:
     build: .
-    command: python -m core.tasks_scheduling.scheduler
+    command: arq core.tasks_scheduling.arq_worker.TaskSchedulingWorkerSettings
     depends_on:
       - celery-worker
     env_file:

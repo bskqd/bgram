@@ -32,7 +32,7 @@ from core.authentication.services.jwt_authentication import JWTAuthenticationSer
 from core.config import settings
 from core.dependencies import EventPublisher, EventReceiver, FastapiDependenciesProvider
 from core.routers import v1
-from core.tasks_scheduling.dependencies import TaskSchedulerDependenciesProvider, TaskSchedulerABC
+from core.tasks_scheduling.dependencies import TasksScheduler, TaskSchedulerDependenciesProvider
 
 
 def create_application(dependency_overrides_factory: Callable, config: BaseSettings) -> FastAPI:
@@ -51,7 +51,7 @@ def create_application(dependency_overrides_factory: Callable, config: BaseSetti
 
 def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
     dependencies_provider = FastapiDependenciesProvider(config)
-    tasks_scheduler_dependencies_provider = TaskSchedulerDependenciesProvider
+    tasks_scheduler_dependencies_provider = TaskSchedulerDependenciesProvider()
     users_dependencies_provider = UsersDependenciesProvider
     authorization_dependencies_provider = AuthorizationDependenciesProvider
     messages_dependencies_provider = MessagesDependenciesProvider
@@ -66,7 +66,7 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         EventPublisher: dependencies_provider.get_event_publisher,
         EventReceiver: dependencies_provider.get_event_receiver,
 
-        TaskSchedulerABC: tasks_scheduler_dependencies_provider.get_tasks_scheduler,
+        TasksScheduler: tasks_scheduler_dependencies_provider.get_tasks_scheduler,
 
         UsersDatabaseRepositoryABC: users_dependencies_provider.get_users_db_repository,
         UserFilesDatabaseRepositoryABC: users_dependencies_provider.get_user_files_db_repository,

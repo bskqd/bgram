@@ -6,7 +6,7 @@ from fastapi_mail import ConnectionConfig
 from passlib.context import CryptContext
 from pydantic import BaseSettings
 
-import core.contrib.redis as redis_contrib
+from core.contrib import redis as redis_contrib
 
 load_dotenv()
 

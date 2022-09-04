@@ -1,35 +1,23 @@
-import abc
-import json
-from datetime import datetime
+from typing import Optional
 
-from fastapi import Depends
+from arq import create_pool, ArqRedis
 
-from core.dependencies import EventPublisher
+from core.tasks_scheduling.arq_settings import arq_redis_settings
 
 
-class TaskSchedulerABC(abc.ABC):
-    @abc.abstractmethod
-    async def add_task(self, task_name: str, trigger_datetime: datetime):
+class TasksScheduler:
+    async def enqueue_job(self, func: str, *func_args, **kwargs):
         pass
 
 
-class TaskScheduler:
-    def __init__(self, event_publisher: EventPublisher):
-        self.event_publisher = event_publisher
-
-    async def add_task(self, task_name: str, trigger_datetime: datetime):
-        await self.event_publisher.publish(
-            'celery_tasks_scheduler',
-            json.dumps(
-                {
-                    'task_name': task_name,
-                    'trigger_datetime': trigger_datetime.strftime('%Y.%m.$d %H:%M:%S'),
-                },
-            ),
-        )
-
-
 class TaskSchedulerDependenciesProvider:
-    @staticmethod
-    async def get_tasks_scheduler(event_publisher: EventPublisher = Depends()):
-        return TaskScheduler(event_publisher)
+    def __init__(self, arq_redis_connection_pool: Optional[ArqRedis] = None):
+        self.arq_redis_connection_pool = arq_redis_connection_pool
+
+    async def get_tasks_scheduler(self) -> TasksScheduler:
+        if not self.arq_redis_connection_pool:
+            await self.initialize_arq_redis_pool()
+        return self.arq_redis_connection_pool
+
+    async def initialize_arq_redis_pool(self):
+        self.arq_redis_connection_pool = await create_pool(arq_redis_settings)
