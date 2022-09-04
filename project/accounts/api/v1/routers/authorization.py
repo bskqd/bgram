@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import true
 
 from accounts.api.v1.schemas import authentication as authorization_schemas
@@ -9,7 +9,7 @@ from accounts.services.exceptions.authorization import InvalidConfirmationTokenE
 from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
 from core.config import settings
-from notifications.background_tasks.email import send_email
+from notifications.async_tasks.email import send_email
 
 router = APIRouter()
 
@@ -17,7 +17,6 @@ router = APIRouter()
 @router.post('/registration')
 async def registration_view(
         user_data: user_schemas.UserCreateSchema,
-        background_tasks: BackgroundTasks,
         users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
         confirmation_tokens_create_service: ConfirmationTokensCreateServiceABC = Depends(),
 ) -> str:
@@ -26,12 +25,11 @@ async def registration_view(
     nickname = user_data.pop('nickname')
     email = user_data.pop('email')
     password = user_data.pop('password')
+    # TODO: create a separate service for proper creation of user and token and sending an email in the end
     user = await users_create_update_service.create_user(nickname, email, password, **user_data)
     token = await confirmation_tokens_create_service.create_confirmation_token(user)
     email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
-    send_email(
-        background_tasks, 'email_confirmation.html', 'Please confirm your email', user.email, template_body=email_data,
-    )
+    await send_email('email_confirmation.html', 'Please confirm your email', email, template_body=email_data)
     return 'Registration is successful, confirm your email.'
 
 
