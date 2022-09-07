@@ -15,7 +15,6 @@ class Settings(BaseSettings):
     BASE_DIR = Path(__file__).resolve().parent.parent
 
     DATABASE_URL: str = os.getenv('DATABASE_URL')
-    SYNC_DATABASE_URL: str = os.getenv('SYNC_DATABASE_URL')
     HOST_DOMAIN: str = os.getenv('HOST_DOMAIN', 'http://127.0.0.1:8000')
 
     DATETIME_INPUT_OUTPUT_FORMAT = '%Y-%m-%d %H:%M:%S'

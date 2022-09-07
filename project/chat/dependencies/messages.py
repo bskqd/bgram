@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 from chat.api.filters.messages import MessagesFilterSet
 from chat.api.pagination.messages import MessagesPaginationDatabaseObjectsRetrieverStrategy
 from chat.database.repository.messages import MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC
-from chat.models import Message, MessagePhoto
+from chat.models import Message, MessageFile
 from chat.services.messages import (
     MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesService, MessageFilesRetrieveService,
     MessageFilesRetrieveServiceABC, MessagesRetrieveServiceABC, MessageFilesServiceABC,
@@ -15,6 +15,7 @@ from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseR
 from core.dependencies import EventPublisher
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
+from core.tasks_scheduling.dependencies import TasksScheduler
 
 
 class MessagesDependenciesProvider:
@@ -24,7 +25,7 @@ class MessagesDependenciesProvider:
 
     @staticmethod
     async def get_message_files_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
-        return SQLAlchemyDatabaseRepository(MessagePhoto, db_session)
+        return SQLAlchemyDatabaseRepository(MessageFile, db_session)
 
     @staticmethod
     async def get_messages_retrieve_service(db_repository: MessagesDatabaseRepositoryABC = Depends()):
@@ -43,9 +44,9 @@ class MessagesDependenciesProvider:
     ):
         message_file_id = request.path_params.get('message_file_id')
         message_file = await message_files_retrieve_service.get_one_message_file(
-            MessagePhoto.id == message_file_id,
-            db_query=select(MessagePhoto).options(joinedload(MessagePhoto.message)),
-        )
+            MessageFile.id == message_file_id,
+            db_query=select(MessageFile).options(joinedload(MessageFile.message)),
+        ) if message_file_id else None
         return MessageFilesService(message_files_db_repository, message_file, event_publisher)
 
     @staticmethod
@@ -54,10 +55,11 @@ class MessagesDependenciesProvider:
             db_repository: MessagesDatabaseRepositoryABC = Depends(),
             event_publisher: EventPublisher = Depends(),
             message_files_service: MessageFilesServiceABC = Depends(),
+            tasks_scheduler: TasksScheduler = Depends(),
     ):
         chat_room_id = request.path_params.get('chat_room_id')
         return MessagesCreateUpdateDeleteService(
-            db_repository, chat_room_id, event_publisher, message_files_service,
+            db_repository, int(chat_room_id), event_publisher, message_files_service, tasks_scheduler,
         )
 
     @staticmethod

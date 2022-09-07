@@ -3,9 +3,9 @@ from sqlalchemy.orm import relationship
 
 from chat.constants import chat_rooms as chat_rooms_constants
 from core.database.base import Base
-from mixins.models import DateTimeABC, DescriptionABC, IsActiveABC, PhotoABC
+from mixins.models import DateTimeABC, DescriptionABC, IsActiveABC, FileABC
 
-__all__ = ['chatroom_members_association_table', 'ChatRoom', 'ChatRoomPhoto']
+__all__ = ['chatroom_members_association_table', 'ChatRoom', 'ChatRoomFile']
 
 
 chatroom_members_association_table = Table(
@@ -13,7 +13,7 @@ chatroom_members_association_table = Table(
     Base.metadata,
     Column('room_id', Integer, ForeignKey('chat_rooms.id', ondelete='CASCADE'), index=True),
     Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), index=True),
-    Column('member_type', String, nullable=False, default=chat_rooms_constants.ChatRoomMemberTypeEnum.MEMBER.value)
+    Column('member_type', String, nullable=False, default=chat_rooms_constants.ChatRoomMemberTypeEnum.MEMBER.value),
 )
 
 
@@ -23,9 +23,9 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
 
-    photos = relationship('ChatRoomPhoto', back_populates='chat_room')
+    photos = relationship('ChatRoomFile', back_populates='chat_room')
     members = relationship(
-        'User', secondary=chatroom_members_association_table, back_populates='chat_rooms'
+        'User', secondary=chatroom_members_association_table, back_populates='chat_rooms',
     )
     messages = relationship('Message', back_populates='chat_room')
 
@@ -34,7 +34,7 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
         return len(self.members)
 
 
-class ChatRoomPhoto(PhotoABC):
+class ChatRoomFile(FileABC):
     __tablename__ = 'chat_rooms_photos'
 
     chat_room_id = Column(Integer, ForeignKey('chat_rooms.id'), index=True)
@@ -43,7 +43,4 @@ class ChatRoomPhoto(PhotoABC):
 
     @property
     def folder_to_save(self) -> str:
-        """
-        Returns path to directory where to save a file.
-        """
-        return f'chat_room/{self.chat_room_id}/'
+        return f'chat_room/{super().folder_to_save}'

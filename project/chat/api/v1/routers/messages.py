@@ -1,5 +1,6 @@
 import asyncio
-from typing import Optional, Tuple
+from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, WebSocket, HTTPException, UploadFile, Form, Request, Query
 
@@ -9,6 +10,7 @@ from chat.api.pagination.messages import MessagesPaginatorABC
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
 from chat.api.v1.selectors.messages import get_messages_db_query
+from chat.constants.messages import MessagesTypeEnum
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
 from chat.dependencies import chat as chat_dependencies
 from chat.models import Message
@@ -67,7 +69,9 @@ async def create_message_view(
         chat_room_id: int,
         request: Request,
         text: str = Form(...),
-        files: Optional[Tuple[UploadFile]] = None,
+        message_type: str = Form(...),
+        scheduled_at: Optional[str] = Form(None),
+        files: Optional[list[UploadFile]] = None,
         request_user: User = Depends(),
         messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
         messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
@@ -78,6 +82,11 @@ async def create_message_view(
         db_repository=messages_db_repository,
         request=request,
     ).check_permissions()
+    if message_type == MessagesTypeEnum.SCHEDULED:
+        return await messages_create_update_delete_service.create_scheduled_message(
+            text, files=files, author_id=request_user.id,
+            scheduled_at=datetime.strptime(scheduled_at, '%d.%m.%Y %H:%M'),
+        )
     return await messages_create_update_delete_service.create_message(text, files=files, author_id=request_user.id)
 
 

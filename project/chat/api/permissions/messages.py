@@ -4,7 +4,7 @@ from fastapi import Request
 from sqlalchemy import select
 
 from accounts.models import User
-from chat.models import chatroom_members_association_table, Message, MessagePhoto
+from chat.models import chatroom_members_association_table, Message, MessageFile
 from core import permissions as mixins_permissions
 from core.database.repository import BaseDatabaseRepository
 from core.permissions import UserIsAuthenticatedPermission
@@ -21,7 +21,7 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
             chat_room_id: int,
             db_repository: BaseDatabaseRepository,
             request: Optional[Request] = None,
-            message_ids: Optional[Union[tuple[int], list[int]]] = None
+            message_ids: Optional[Union[tuple[int], list[int]]] = None,
     ):
         self.request_user = request_user
         self.chat_room_id = chat_room_id
@@ -38,10 +38,10 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
 
     async def check_user_is_member_of_chat_room(self):
         is_user_member_of_chat_room_query = select(
-            chatroom_members_association_table.c.room_id
+            chatroom_members_association_table.c.room_id,
         ).where(
             chatroom_members_association_table.c.user_id == self.request_user.id,
-            chatroom_members_association_table.c.room_id == self.chat_room_id
+            chatroom_members_association_table.c.room_id == self.chat_room_id,
         )
         if not await self.db_repository.exists(db_query=is_user_member_of_chat_room_query):
             raise self.permission_denied_exception
@@ -50,10 +50,10 @@ class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
         if not self.message_ids:
             raise self.permission_denied_exception
         is_user_message_author_query = select(
-            Message
+            Message,
         ).where(
             Message.id.in_(self.message_ids),
-            Message.author_id == self.request_user.id
+            Message.author_id == self.request_user.id,
         )
         if not await self.db_repository.exists(db_query=is_user_message_author_query):
             raise self.permission_denied_exception
@@ -76,12 +76,12 @@ class UserMessageFilesPermissions(mixins_permissions.BasePermission):
 
     async def check_message_file_message_author(self):
         is_request_user_message_author_query = select(
-            MessagePhoto.id
+            MessageFile.id,
         ).join(
-            Message
+            Message,
         ).where(
-            MessagePhoto.id == self.message_file_id,
-            Message.author_id == self.request_user.id
+            MessageFile.id == self.message_file_id,
+            Message.author_id == self.request_user.id,
         )
         if not await self.db_repository.exists(db_query=is_request_user_message_author_query):
             raise self.permission_denied_exception

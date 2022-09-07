@@ -3,9 +3,9 @@ from sqlalchemy.orm import relationship
 
 from chat.models import chatroom_members_association_table
 from core.config import settings
-from mixins.models import DateTimeABC, PhotoABC, DescriptionABC, IsActiveABC
+from mixins.models import DateTimeABC, FileABC, DescriptionABC, IsActiveABC
 
-__all__ = ['User', 'UserPhoto']
+__all__ = ['User', 'UserFile']
 
 
 class User(DateTimeABC, DescriptionABC, IsActiveABC):
@@ -17,10 +17,10 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
     password = Column(String)
 
     email_confirmation_tokens = relationship('EmailConfirmationToken', back_populates='user')
-    photos = relationship('UserPhoto', back_populates='user')
+    photos = relationship('UserFile', back_populates='user')
     messages = relationship('Message', back_populates='author')
     chat_rooms = relationship(
-        'ChatRoom', secondary=chatroom_members_association_table, back_populates='members'
+        'ChatRoom', secondary=chatroom_members_association_table, back_populates='members',
     )
 
     def check_password(self, plain_text_password: str) -> bool:
@@ -28,7 +28,7 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
         return settings.PWD_CONTEXT.verify(plain_text_password, self.password)
 
 
-class UserPhoto(PhotoABC):
+class UserFile(FileABC):
     __tablename__ = 'users_photos'
 
     user_id = Column(Integer, ForeignKey('users.id'), index=True)
@@ -37,7 +37,4 @@ class UserPhoto(PhotoABC):
 
     @property
     def folder_to_save(self) -> str:
-        """
-        Returns path to directory where to save a file.
-        """
-        return f'users/{self.user_id}/'
+        return f'users/{super().folder_to_save}'

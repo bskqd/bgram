@@ -7,20 +7,14 @@ from chat.websockets.chat import ChatRoomsWebSocketConnectionManager
 from core.dependencies import EventPublisher
 
 
-async def message_created_event(
-        event_publisher: EventPublisher,
-        message: Union[Message, int],
-):
+async def message_created_event(event_publisher: EventPublisher, message: Union[Message, int]):
     await broadcast_message_to_chat_room(
         event_publisher, message.chat_room_id,
         MessagesActionTypeEnum.CREATED.value, ListMessagesSchema.from_orm(message).dict(),
     )
 
 
-async def message_updated_event(
-        event_publisher: EventPublisher,
-        message: Message,
-):
+async def message_updated_event(event_publisher: EventPublisher, message: Message):
     await broadcast_message_to_chat_room(
         event_publisher, message.chat_room_id,
         MessagesActionTypeEnum.UPDATED.value, ListMessagesSchema.from_orm(message).dict(),

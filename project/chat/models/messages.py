@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, Text, DateTime, String
 from sqlalchemy.orm import relationship
 
-from mixins.models import DateTimeABC, PhotoABC
+from chat.constants.messages import MessagesTypeEnum
+from mixins.models import DateTimeABC, FileABC
 
-__all__ = ['Message', 'MessagePhoto']
+__all__ = ['Message', 'MessageFile']
 
 
 class Message(DateTimeABC):
@@ -15,14 +16,25 @@ class Message(DateTimeABC):
     author_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), index=True)
     chat_room_id = Column(Integer, ForeignKey('chat_rooms.id'), index=True)
     replayed_message_id = Column(Integer, ForeignKey('messages.id', ondelete='SET NULL'), index=True)
+    message_type = Column(String, nullable=False, default=MessagesTypeEnum.PRIMARY)
+
+    scheduled_at = Column(DateTime)
+    scheduler_task_id = Column(
+        String,
+        index=True,
+        doc=(
+            'If the message is scheduled, then id of the scheduled task in the scheduler '
+            'must be saved here for the future use'
+        ),
+    )
 
     author = relationship('User', back_populates='messages')
     chat_room = relationship('ChatRoom', back_populates='messages', cascade='all, delete')
     replayed_message = relationship('Message', remote_side=id, backref='replies')
-    photos = relationship('MessagePhoto', back_populates='message')
+    photos = relationship('MessageFile', back_populates='message')
 
 
-class MessagePhoto(PhotoABC):
+class MessageFile(FileABC):
     __tablename__ = 'message_photos'
 
     message_id = Column(Integer, ForeignKey('messages.id'), index=True)
@@ -31,7 +43,4 @@ class MessagePhoto(PhotoABC):
 
     @property
     def folder_to_save(self) -> str:
-        """
-        Returns path to directory where to save a file.
-        """
-        return f'message/{self.message_id}/'
+        return f'messages/{super().folder_to_save}'

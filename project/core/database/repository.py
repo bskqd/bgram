@@ -119,7 +119,7 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
 
     async def count(self, *args, db_query: Optional[Select] = None) -> int:
         db_query = self._get_db_query(*args, db_query=db_query)
-        return await self.__db_session.scalar(db_query.with_only_columns([func.count()]))
+        return await self.__db_session.scalar(db_query.with_only_columns([func.count()])) or 0
 
     def _get_db_query(self, *args, db_query: Optional[Select]) -> Select:
         return db_query.where(*args) if db_query is not None else select(self.model).where(*args)

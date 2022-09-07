@@ -2,8 +2,6 @@ import asyncio
 
 from celery import Celery
 
-from core.celery.utils import run_task_asynchronously
-
 bgram_celery_app = Celery('bgram_celery_app')
 
 bgram_celery_app.config_from_object('core.celery.celeryconfig')
@@ -17,7 +15,6 @@ def setup_periodic_tasks(sender, **kwargs):
 
 
 @bgram_celery_app.task
-@run_task_asynchronously
 async def test():
     await asyncio.sleep(5)
     return '=========HELLO========'

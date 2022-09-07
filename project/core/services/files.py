@@ -8,16 +8,16 @@ from fastapi import UploadFile
 
 from core.config import settings
 from core.database.repository import BaseDatabaseRepository
-from mixins.models import PhotoABC
+from mixins.models import FileABC
 
 
 class FilesServiceABC(abc.ABC):
     @abc.abstractmethod
-    async def create_object_file(self, *args, **kwargs) -> PhotoABC:
+    async def create_object_file(self, *args, **kwargs) -> FileABC:
         pass
 
     @abc.abstractmethod
-    async def change_file(self, *args, **kwargs) -> PhotoABC:
+    async def change_file(self, *args, **kwargs) -> FileABC:
         pass
 
     @abc.abstractmethod
@@ -29,12 +29,12 @@ class FilesService(FilesServiceABC):
     """
     Service class for working with files.
     """
-    file_model: Type[PhotoABC] = None
+    file_model: Type[FileABC] = None
 
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
-    async def create_object_file(self, file: UploadFile, **kwargs) -> PhotoABC:
+    async def create_object_file(self, file: UploadFile, **kwargs) -> FileABC:
         """
         Creates an object of file_model class in database.
         """
@@ -46,7 +46,7 @@ class FilesService(FilesServiceABC):
         await self.db_repository.refresh(model_instance)
         return model_instance
 
-    async def change_file(self, file_object: Union[PhotoABC, int], replacement_file: UploadFile) -> PhotoABC:
+    async def change_file(self, file_object: Union[FileABC, int], replacement_file: UploadFile) -> FileABC:
         """
         Changes file_path in file_object to new uploaded file.
         """
@@ -60,7 +60,7 @@ class FilesService(FilesServiceABC):
         await self.remove_file_from_filesystem(file_path_to_remove)
         return file_object
 
-    async def delete_file_object(self, file_object_to_delete: Union[PhotoABC, int]):
+    async def delete_file_object(self, file_object_to_delete: Union[FileABC, int]):
         """
         Deletes file object from db and removes file from filesystem.
         """

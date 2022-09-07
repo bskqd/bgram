@@ -7,7 +7,7 @@ load_dotenv()
 broker_url = os.getenv('CELERY_BROKER_URL')
 result_backend = os.getenv('CELERY_RESULT_BACKEND')
 
-include = []  # specify all folders with celery tasks for proper tasks' auto discovering
+include = ['chat.tasks']  # specify all folders with celery tasks for proper tasks' auto discovering
 
 task_serializer = 'json'
 result_serializer = 'json'

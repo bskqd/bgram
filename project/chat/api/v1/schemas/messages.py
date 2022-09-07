@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -23,6 +24,7 @@ class ListMessagesSchema(PhotosFieldSchemaMixin):
     text: str
     author: MessageAuthorSchema
     replayed_message_id: Optional[int]
+    scheduled_at: Optional[datetime]
 
     class Config:
         orm_mode = True

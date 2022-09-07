@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Column, DateTime, func, String, Integer, Boolean
 
 from core.database.base import Base
@@ -22,7 +24,7 @@ class IsActiveABC(Base):
     is_active = Column(Boolean, default=True)
 
 
-class PhotoABC(DateTimeABC):
+class FileABC(DateTimeABC):
     __abstract__ = True
 
     id = Column(Integer, primary_key=True)
@@ -33,4 +35,4 @@ class PhotoABC(DateTimeABC):
         """
         Must return path to directory where to save a file.
         """
-        raise NotImplementedError()
+        return datetime.utcnow().strftime('%Y/%m/%d/')

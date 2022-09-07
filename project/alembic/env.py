@@ -2,14 +2,14 @@ from logging.config import fileConfig
 
 from alembic import context
 
-from accounts.models import EmailConfirmationToken, User, UserPhoto
-from chat.models import ChatRoom, chatroom_members_association_table, ChatRoomPhoto, Message, MessagePhoto
+from accounts.models import EmailConfirmationToken, User, UserFile
+from chat.models import ChatRoom, chatroom_members_association_table, ChatRoomFile, Message, MessageFile
 from core.config import settings
 from core.database.base import engine, Base
 
 __all__ = [
-    EmailConfirmationToken, User, UserPhoto, ChatRoom, chatroom_members_association_table, ChatRoomPhoto,
-    Message, MessagePhoto,
+    EmailConfirmationToken, User, UserFile, ChatRoom, chatroom_members_association_table, ChatRoomFile,
+    Message, MessageFile,
 ]
 
 # this is the Alembic Config object, which provides
@@ -59,10 +59,7 @@ def run_migrations_offline():
 
 async def run_migrations_online():
     """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    In this scenario we need to create an Engine and associate a connection with the context.
     """
     def do_migrations(connection):
         context.configure(connection=connection, target_metadata=target_metadata)
@@ -70,7 +67,7 @@ async def run_migrations_online():
         with context.begin_transaction():
             context.run_migrations()
 
-    async with engine.receive_messages() as connection:
+    async with engine.connect() as connection:
         await connection.run_sync(do_migrations)
 
 

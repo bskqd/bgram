@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Optional
 
 from arq import create_pool, ArqRedis
@@ -5,8 +6,13 @@ from arq import create_pool, ArqRedis
 from core.tasks_scheduling.arq_settings import arq_redis_settings
 
 
+@dataclass
+class JobResult:
+    job_id: str
+
+
 class TasksScheduler:
-    async def enqueue_job(self, func: str, *func_args, **kwargs):
+    async def enqueue_job(self, func: str, *func_args, **kwargs) -> Optional[JobResult]:
         pass
 
 
