@@ -6,7 +6,7 @@ services:
       - db
       - redis
     env_file:
-      - ./.env
+      - .env
     ports:
       - '8000:8000'
     links:
@@ -27,7 +27,7 @@ services:
     networks:
       - app-network
     volumes:
-      - /var/bgram_postgresql:/var/bgram_postgresql
+      - /var/bgram/postgresql:/var/bgram/postgresql
   redis:
     image: redis:6.2-alpine
     restart: always
@@ -38,7 +38,7 @@ services:
     networks:
       - app-network
     volumes:
-      - /var/bgram_redis:/var/bgram_redis
+      - /var/bgram/redis:/var/bgram/redis
   celery-worker:
     build: .
     command: celery -A core.celery.celery_app:bgram_celery_app worker -l info
@@ -46,7 +46,7 @@ services:
       - app
       - redis
     env_file:
-      - ./.env
+      - .env
     links:
       - redis
     volumes:
@@ -59,7 +59,7 @@ services:
     depends_on:
       - celery-worker
     env_file:
-      - ./.env
+      - .env
     links:
       - redis
     networks:
