@@ -9,11 +9,3 @@ class MessagesDatabaseRepositoryABC(BaseDatabaseRepository, ABC):
 
 class MessageFilesDatabaseRepositoryABC(BaseDatabaseRepository, ABC):
     pass
-
-
-class ScheduledMessagesDatabaseRepositoryABC(BaseDatabaseRepository, ABC):
-    pass
-
-
-class ScheduledMessageFilesDatabaseRepositoryABC(BaseDatabaseRepository, ABC):
-    pass
