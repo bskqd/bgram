@@ -64,6 +64,23 @@ async def list_messages_view(
     return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(request, chat_room_id)))
 
 
+@router.get('/chat_rooms/{chat_room_id}/scheduled_messages', response_model=PaginatedListMessagesSchema)
+async def list_scheduled_messages_view(
+        chat_room_id: int,
+        request: Request,
+        request_user: User = Depends(),
+        filterset: MessagesFilterSetABC = Depends(),
+        paginator: MessagesPaginatorABC = Depends(),
+):
+    return await paginator.paginate(
+        filterset.filter_db_query(
+            get_messages_db_query(
+                request, chat_room_id, User.id == request_user.id, message_type=MessagesTypeEnum.SCHEDULED,
+            ),
+        ),
+    )
+
+
 @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
 async def create_message_view(
         chat_room_id: int,
