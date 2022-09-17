@@ -37,7 +37,7 @@ class Message(DateTimeABC):
 class MessageFile(FileABC):
     __tablename__ = 'message_photos'
 
-    message_id = Column(Integer, ForeignKey('messages.id'), index=True)
+    message_id = Column(Integer, ForeignKey('messages.id', ondelete='CASCADE'), index=True)
 
     message = relationship('Message', back_populates='photos', cascade='all, delete')
 

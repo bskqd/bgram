@@ -61,7 +61,11 @@ async def list_messages_view(
         filterset: MessagesFilterSetABC = Depends(),
         paginator: MessagesPaginatorABC = Depends(),
 ):
-    return await paginator.paginate(filterset.filter_db_query(get_messages_db_query(request, chat_room_id)))
+    return await paginator.paginate(
+        filterset.filter_db_query(
+            get_messages_db_query(request, chat_room_id, Message.message_type == MessagesTypeEnum.PRIMARY.value),
+        ),
+    )
 
 
 @router.get('/chat_rooms/{chat_room_id}/scheduled_messages', response_model=PaginatedListMessagesSchema)
@@ -75,7 +79,8 @@ async def list_scheduled_messages_view(
     return await paginator.paginate(
         filterset.filter_db_query(
             get_messages_db_query(
-                request, chat_room_id, User.id == request_user.id, message_type=MessagesTypeEnum.SCHEDULED,
+                request, chat_room_id, User.id == request_user.id,
+                Message.message_type == MessagesTypeEnum.SCHEDULED.value,
             ),
         ),
     )
@@ -126,8 +131,17 @@ async def update_message_view(
         message_ids=(message_id,),
     ).check_permissions()
     message = await messages_retrieve_service.get_one_message(
-        Message.id == message_id, db_query=get_messages_db_query(request, chat_room_id),
+        Message.id == message_id,
+        db_query=get_messages_db_query(
+            request, chat_room_id, Message.message_type.in_(
+                (MessagesTypeEnum.PRIMARY.value, MessagesTypeEnum.SCHEDULED.value),
+            ),
+        ),
     )
+    if message.message_type == MessagesTypeEnum.SCHEDULED:
+        await messages_create_update_delete_service.update_scheduled_message(
+            message, **message_data.dict(exclude_unset=True)
+        )
     return await messages_create_update_delete_service.update_message(message, **message_data.dict(exclude_unset=True))
 
 
@@ -135,7 +149,8 @@ async def update_message_view(
 async def delete_messages_view(
         chat_room_id: int,
         request: Request,
-        message_ids: tuple[int] = Query(...),
+        message_ids: tuple[int, ...] = Query(...),
+        message_type: str = Query(...),
         request_user: User = Depends(),
         messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
         messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
@@ -147,12 +162,15 @@ async def delete_messages_view(
         request=request,
         message_ids=message_ids,
     ).check_permissions()
+    if message_type == MessagesTypeEnum.SCHEDULED:
+        await messages_create_update_delete_service.delete_scheduled_messages(message_ids)
     await messages_create_update_delete_service.delete_messages(message_ids)
     return {'detail': 'success'}
 
 
+# TODO: fully refactor files service and add support for updating files of scheduled messages
 @router.patch('/message/{message_id}/message_files/{message_file_id}', response_model=FilesSchema)
-async def replace_message_photo(
+async def replace_message_file(
         message_file_id: int,
         file: UploadFile,
         request_user: Optional[User] = Depends(),
@@ -168,7 +186,7 @@ async def replace_message_photo(
 
 
 @router.delete('/message/{message_id}/message_files/{message_file_id}')
-async def delete_message_photo(
+async def delete_message_file(
         message_file_id: int,
         request_user: Optional[User] = Depends(),
         message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),

@@ -12,7 +12,7 @@ from chat.models import Message, MessageFile
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies import EventPublisher
 from core.services.files import FilesService
-from core.tasks_scheduling.dependencies import TasksScheduler
+from core.tasks_scheduling.dependencies import TasksScheduler, JobResult
 from mixins.models import FileABC
 
 
@@ -65,6 +65,10 @@ class MessagesCreateUpdateDeleteServiceABC(abc.ABC):
     async def delete_messages(self, *args) -> tuple[int]:
         pass
 
+    @abc.abstractmethod
+    async def delete_scheduled_messages(self, *args) -> tuple[int]:
+        pass
+
 
 class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
     def __init__(
@@ -108,11 +112,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             load_relations_after_creation=False, **kwargs,
         )
         await self._db_repository.refresh(created_message)
-        task_result = await self._tasks_scheduler.enqueue_job(
-            'execute_task_in_background',
-            'chat.tasks.messages.send_scheduled_message', task_kwargs={'scheduled_message_id': created_message.id},
-            _queue_name='arq:tasks_scheduling_queue', _defer_until=created_message.scheduled_at,
-        )
+        task_result = await self._schedule_message(created_message)
         await self.update_scheduled_message(created_message, scheduler_task_id=task_result.job_id)
         if load_relations_after_creation:
             created_message = await self._load_message_relations(created_message.id)
@@ -155,16 +155,31 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return updated_message
 
     async def update_scheduled_message(self, message: Message, **kwargs):
-        # TODO: implement task rescheduling
         updated_message = await self._db_repository.update_object(message, **kwargs)
         await self._db_repository.commit()
         await self._db_repository.refresh(updated_message)
+        await self._schedule_message(updated_message)
         return updated_message
 
+    async def _schedule_message(self, message: Message) -> JobResult:
+        return await self._tasks_scheduler.enqueue_job(
+            'execute_task_in_background',
+            'chat.tasks.messages.send_scheduled_message', task_kwargs={'scheduled_message_id': message.id},
+            _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
+        )
+
+    # TODO: implement proper deletion
     async def delete_messages(self, message_ids: tuple[int]) -> tuple[int]:
         await self._db_repository.delete(Message.id.in_(message_ids))
         await self._db_repository.commit()
         await messages_deleted_event(self._event_publisher, self._chat_room_id, message_ids)
+        return message_ids
+
+    async def delete_scheduled_messages(self, message_ids: tuple[int]) -> tuple[int]:
+        await self._db_repository.delete(
+            Message.id.in_(message_ids), Message.message_type == MessagesTypeEnum.SCHEDULED.value,
+        )
+        await self._db_repository.commit()
         return message_ids
 
 

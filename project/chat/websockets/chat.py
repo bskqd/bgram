@@ -40,7 +40,7 @@ class ChatRoomsWebSocketConnectionManager:
 
     @classmethod
     async def broadcast(cls, message: dict, chat_room_id: int, event_publisher: EventPublisher):
-        await event_publisher.publish(f'chat_room:{chat_room_id}', json.dumps(message))
+        await event_publisher.publish(f'chat_room:{chat_room_id}', json.dumps(message, default=str))
 
     async def send_personal_message(self, message: dict):
         await self.websocket_connection.websocket.send_json(message)

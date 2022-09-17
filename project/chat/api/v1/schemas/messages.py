@@ -8,6 +8,7 @@ from mixins.schemas import PaginatedResponseSchemaMixin, PhotosFieldSchemaMixin
 
 class UpdateMessageSchema(BaseModel):
     text: str
+    scheduled_at: Optional[datetime] = None
 
 
 class MessageAuthorSchema(BaseModel):
