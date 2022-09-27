@@ -9,11 +9,11 @@ from chat.api.filters.messages import MessagesFilterSetABC
 from chat.api.pagination.messages import MessagesPaginatorABC
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
 from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
-from chat.api.v1.selectors.messages import get_messages_db_query
+from chat.api.v1.selectors.messages import get_messages_db_query, get_message_file_db_query
 from chat.constants.messages import MessagesTypeEnum
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
 from chat.dependencies import chat as chat_dependencies
-from chat.models import Message
+from chat.models import Message, MessageFile
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
 from chat.services.messages import (
     MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesServiceABC,
@@ -168,12 +168,11 @@ async def delete_messages_view(
     return {'detail': 'success'}
 
 
-# TODO: fully refactor files service and add support for updating files of scheduled messages
 @router.patch('/message/{message_id}/message_files/{message_file_id}', response_model=FilesSchema)
 async def replace_message_file(
         message_file_id: int,
         file: UploadFile,
-        request_user: Optional[User] = Depends(),
+        request_user: User = Depends(),
         message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
         message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
@@ -182,16 +181,27 @@ async def replace_message_file(
         message_file_id,
         message_files_db_repository,
     ).check_permissions()
-    return await message_files_service.change_message_file(file)
+    message_file = await message_files_service.get_one_message_file(
+        db_query=get_message_file_db_query(MessageFile.id == message_file_id),
+    )
+    if message_file.message.message_type == MessagesTypeEnum.SCHEDULED:
+        return await message_files_service.change_scheduled_message_file(file, message_file)
+    return await message_files_service.change_message_file(file, message_file)
 
 
 @router.delete('/message/{message_id}/message_files/{message_file_id}')
 async def delete_message_file(
         message_file_id: int,
-        request_user: Optional[User] = Depends(),
+        request_user: User = Depends(),
         message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
         message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
     await UserMessageFilesPermissions(request_user, message_file_id, message_files_db_repository).check_permissions()
-    await message_files_service.delete_message_file()
+    message_file = await message_files_service.get_one_message_file(
+        db_query=get_message_file_db_query(MessageFile.id == message_file_id),
+    )
+    if message_file.message.message_type == MessagesTypeEnum.SCHEDULED:
+        await message_files_service.delete_scheduled_message_file(message_file)
+        return {'status': 'success'}
+    await message_files_service.delete_message_file(message_file)
     return {'status': 'success'}

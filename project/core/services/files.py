@@ -24,6 +24,10 @@ class FilesServiceABC(abc.ABC):
     async def delete_file_object(self, *args, **kwargs):
         pass
 
+    @abc.abstractmethod
+    async def remove_file_from_filesystem(self, file_path: str):
+        pass
+
 
 class FilesService(FilesServiceABC):
     """
@@ -74,7 +78,7 @@ class FilesService(FilesServiceABC):
     async def remove_file_from_filesystem(self, file_path: str):
         file_path_to_remove = os.path.join(settings.MEDIA_PATH, file_path)
         loop = asyncio.get_running_loop()
-        if await loop.run_in_executor(None, os.path.exists, file_path_to_remove):
+        if os.path.exists(file_path_to_remove):
             await loop.run_in_executor(None, os.remove, file_path_to_remove)
 
     async def write_file(self, folder_to_save_file: str, file: UploadFile) -> str:

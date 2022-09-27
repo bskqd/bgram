@@ -24,7 +24,7 @@ from chat.dependencies.messages import MessagesDependenciesProvider
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC, ChatRoomsCreateUpdateServiceABC
 from chat.services.messages import (
     MessagesRetrieveServiceABC, MessageFilesRetrieveServiceABC, MessageFilesServiceABC,
-    MessagesCreateUpdateDeleteServiceABC,
+    MessagesCreateUpdateDeleteServiceABC, MessageFilesFilesystemServiceABC,
 )
 from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.authentication.services.authentication import AuthenticationServiceABC
@@ -89,6 +89,7 @@ def fastapi_dependency_overrides_factory(config: BaseSettings) -> dict:
         MessageFilesServiceABC: messages_dependencies_provider.get_message_files_service,
         MessagesFilterSetABC: messages_dependencies_provider.get_messages_filterset,
         MessagesPaginatorABC: messages_dependencies_provider.get_messages_paginator,
+        MessageFilesFilesystemServiceABC: messages_dependencies_provider.get_message_files_filesystem_service,
 
         ChatRoomsDatabaseRepositoryABC: chat_rooms_dependencies_provider.get_chat_rooms_db_repository,
         ChatRoomsRetrieveServiceABC: chat_rooms_dependencies_provider.get_chat_rooms_retrieve_service,

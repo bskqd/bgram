@@ -1,5 +1,5 @@
 import abc
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import UploadFile
 from sqlalchemy import select
@@ -11,7 +11,7 @@ from chat.events.messages import message_created_event, message_updated_event, m
 from chat.models import Message, MessageFile
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies import EventPublisher
-from core.services.files import FilesService
+from core.services.files import FilesService, FilesServiceABC
 from core.tasks_scheduling.dependencies import TasksScheduler, JobResult
 from mixins.models import FileABC
 
@@ -74,10 +74,10 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
     def __init__(
             self,
             db_repository: BaseDatabaseRepository,
-            chat_room_id: Optional[int] = None,
-            event_publisher: Optional[EventPublisher] = None,
-            message_files_service: Optional['MessageFilesServiceABC'] = None,
-            tasks_scheduler: Optional[TasksScheduler] = None,
+            chat_room_id: Optional[int],
+            event_publisher: EventPublisher,
+            message_files_service: 'MessageFilesServiceABC',
+            tasks_scheduler: TasksScheduler,
     ):
         self._db_repository = db_repository
         self._chat_room_id = chat_room_id
@@ -168,19 +168,19 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
         )
 
-    # TODO: implement proper deletion
     async def delete_messages(self, message_ids: tuple[int]) -> tuple[int]:
-        await self._db_repository.delete(Message.id.in_(message_ids))
-        await self._db_repository.commit()
+        await self._delete_messages(message_ids, Message.message_type == MessagesTypeEnum.PRIMARY.value)
         await messages_deleted_event(self._event_publisher, self._chat_room_id, message_ids)
         return message_ids
 
     async def delete_scheduled_messages(self, message_ids: tuple[int]) -> tuple[int]:
-        await self._db_repository.delete(
-            Message.id.in_(message_ids), Message.message_type == MessagesTypeEnum.SCHEDULED.value,
-        )
-        await self._db_repository.commit()
+        await self._delete_messages(message_ids, Message.message_type == MessagesTypeEnum.SCHEDULED.value)
         return message_ids
+
+    async def _delete_messages(self, message_ids: tuple[int], *filtering_args):
+        await self._db_repository.delete(Message.id.in_(message_ids), *filtering_args)
+        await self._db_repository.commit()
+        await self._message_files_service.delete_message_files_from_filesystem(Message.id.in_(message_ids))
 
 
 class MessageFilesRetrieveServiceABC(abc.ABC):
@@ -197,39 +197,109 @@ class MessageFilesRetrieveService(MessageFilesRetrieveServiceABC):
         return await self.db_repository.get_one(*args, db_query=db_query)
 
 
+class MessageFilesFilesystemServiceABC(FilesServiceABC, abc.ABC):
+    pass
+
+
+class MessageFilesFilesystemService(FilesService, MessageFilesFilesystemServiceABC):
+    file_model = MessageFile
+
+
 class MessageFilesServiceABC(abc.ABC):
     @abc.abstractmethod
     async def create_object_file(self, file: UploadFile, **kwargs) -> FileABC:
         pass
 
     @abc.abstractmethod
-    async def change_message_file(self, replacement_file: UploadFile) -> FileABC:
+    async def change_message_file(self, replacement_file: UploadFile, message_file: Union[MessageFile, int]) -> FileABC:
         pass
 
     @abc.abstractmethod
-    async def delete_message_file(self):
+    async def delete_message_file(self, message_file: Union[MessageFile, int]):
+        pass
+
+    @abc.abstractmethod
+    async def change_scheduled_message_file(
+            self, replacement_file: UploadFile, message_file: Union[MessageFile, int],
+    ) -> FileABC:
+        pass
+
+    @abc.abstractmethod
+    async def delete_scheduled_message_file(self, message_file: Union[MessageFile, int]):
+        pass
+
+    @abc.abstractmethod
+    async def delete_message_files_from_filesystem(self, *args):
+        pass
+
+    @abc.abstractmethod
+    async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> MessageFile:
+        pass
+
+    @abc.abstractmethod
+    async def get_many_message_files(self, *args, db_query: Optional[Select] = None) -> list[MessageFile]:
         pass
 
 
-class MessageFilesService(FilesService, MessageFilesServiceABC):
-    file_model = MessageFile
-
+class MessageFilesService(MessageFilesServiceABC):
     def __init__(
             self,
+            files_service: MessageFilesFilesystemServiceABC,
             db_repository: BaseDatabaseRepository,
-            message_file: Optional[MessageFile],
-            event_publisher: EventPublisher,
+            event_publisher: Optional[EventPublisher] = None,
     ):
-        super().__init__(db_repository)
-        self.message_file = message_file
-        self.message = message_file.message if self.message_file else None
+        self.files_service = files_service
+        self.db_repository = db_repository
         self.event_publisher = event_publisher
 
-    async def change_message_file(self, replacement_file: UploadFile) -> MessageFile:
-        new_message_file: MessageFile = await super().change_file(self.message_file.id, replacement_file)
-        await message_updated_event(self.event_publisher, self.message)
+    async def get_one_message_file(self, *args, db_query: Optional[Select] = None) -> MessageFile:
+        return await self.db_repository.get_one(*args, db_query=db_query)
+
+    async def get_many_message_files(self, *args, db_query: Optional[Select] = None) -> list[MessageFile]:
+        return await self.db_repository.get_many(*args, db_query=db_query)
+
+    async def create_object_file(self, file: UploadFile, **kwargs) -> MessageFile:
+        return await self.files_service.create_object_file(file, **kwargs)
+
+    async def change_message_file(
+            self,
+            replacement_file: UploadFile,
+            message_file: Union[MessageFile, int],
+    ) -> MessageFile:
+        message_file_id = self._get_message_file_id(message_file)
+        new_message_file: MessageFile = await self.files_service.change_file(message_file_id, replacement_file)
+        message = getattr(message_file, 'message', None)
+        if message:
+            await message_updated_event(self.event_publisher, message)
         return new_message_file
 
-    async def delete_message_file(self):
-        await super().delete_file_object(self.message_file.id)
-        await message_updated_event(self.event_publisher, self.message)
+    async def delete_message_file(self, message_file: Optional[Union[MessageFile, int]]):
+        message_file_id = self._get_message_file_id(message_file)
+        await self.files_service.delete_file_object(message_file_id)
+        message = getattr(message_file, 'message', None)
+        if message:
+            await message_updated_event(self.event_publisher, message)
+
+    async def change_scheduled_message_file(
+            self,
+            replacement_file: UploadFile,
+            message_file: Union[MessageFile, int],
+    ) -> MessageFile:
+        message_file_id = self._get_message_file_id(message_file)
+        new_message_file: MessageFile = await self.files_service.change_file(message_file_id, replacement_file)
+        return new_message_file
+
+    async def delete_scheduled_message_file(self, message_file: Optional[Union[MessageFile, int]]):
+        message_file_id = self._get_message_file_id(message_file)
+        await self.files_service.delete_file_object(message_file_id)
+
+    async def delete_message_files_from_filesystem(self, *args):
+        file_paths = await self.db_repository.get_many(
+            db_query=select(MessageFile.file_path).join(Message).where(*args),
+        )
+        for file_path in file_paths:
+            await self.files_service.remove_file_from_filesystem(file_path)
+
+    def _get_message_file_id(self, message_file: Optional[Union[MessageFile, int]]) -> int:
+        if message_file:
+            return message_file.id if isinstance(message_file, MessageFile) else message_file
