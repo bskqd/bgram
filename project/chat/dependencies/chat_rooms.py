@@ -9,7 +9,7 @@ from core.database.repository import SQLAlchemyDatabaseRepository, BaseDatabaseR
 from core.pagination import DefaultPaginationClass
 
 
-class ChatRoomsDependenciesProvider:
+class ChatRoomsDependenciesOverrides:
     @staticmethod
     async def get_chat_rooms_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
         return SQLAlchemyDatabaseRepository(ChatRoom, db_session)

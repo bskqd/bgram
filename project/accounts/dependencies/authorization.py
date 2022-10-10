@@ -6,10 +6,11 @@ from accounts.database.repository.users import UsersDatabaseRepositoryABC
 from accounts.models import EmailConfirmationToken
 from accounts.services.authorization import EmailConfirmationTokensCreateService, EmailConfirmationTokensConfirmService
 from accounts.services.users import UsersCreateUpdateServiceABC
+from core.config import SettingsABC
 from core.database.repository import SQLAlchemyDatabaseRepository
 
 
-class AuthorizationDependenciesProvider:
+class AuthorizationDependenciesOverrides:
     @staticmethod
     async def get_confirmation_token_db_repository(db_session: AsyncSession = Depends()):
         return SQLAlchemyDatabaseRepository(EmailConfirmationToken, db_session)
@@ -22,5 +23,6 @@ class AuthorizationDependenciesProvider:
     async def get_confirmation_token_confirm_service(
             users_db_repository: UsersDatabaseRepositoryABC = Depends(),
             users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
+            settings: SettingsABC = Depends(),
     ):
-        return EmailConfirmationTokensConfirmService(users_db_repository, users_create_update_service)
+        return EmailConfirmationTokensConfirmService(users_db_repository, users_create_update_service, settings)

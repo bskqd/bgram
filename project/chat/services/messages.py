@@ -10,7 +10,7 @@ from chat.constants.messages import MessagesTypeEnum
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessageFile
 from core.database.repository import BaseDatabaseRepository
-from core.dependencies import EventPublisher
+from core.dependencies.dependencies import EventPublisher
 from core.services.files import FilesService, FilesServiceABC
 from core.tasks_scheduling.dependencies import TasksScheduler, JobResult
 from mixins.models import FileABC
@@ -111,7 +111,6 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             text, files, author_id, message_type=MessagesTypeEnum.SCHEDULED.value,
             load_relations_after_creation=False, **kwargs,
         )
-        await self._db_repository.refresh(created_message)
         task_result = await self._schedule_message(created_message)
         await self.update_scheduled_message(created_message, scheduler_task_id=task_result.job_id)
         if load_relations_after_creation:
@@ -130,12 +129,11 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         created_message = await self._db_repository.create(message)
         await self._db_repository.commit()
         await self._db_repository.refresh(created_message)
-        message_id = created_message.id
         if files:
             for file in files:
-                await self._message_files_service.create_object_file(file, message_id=message_id)
+                await self._message_files_service.create_object_file(file, message_id=created_message.id)
         if load_relations_after_creation:
-            return await self._load_message_relations(message_id)
+            return await self._load_message_relations(created_message.id)
         return created_message
 
     async def _load_message_relations(self, message_id: int) -> Message:

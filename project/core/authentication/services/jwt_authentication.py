@@ -11,10 +11,9 @@ from starlette import status
 
 from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
-from core.config import settings
+from core.config import SettingsABC
 from core.database.base import DatabaseSession
-
-VALID_TOKEN_TYPES = frozenset([settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE])
+from core.dependencies.providers import settings_provider
 
 
 class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
@@ -28,7 +27,7 @@ class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
     async def validate_token(
             cls,
             token: str,
-            valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES,
+            valid_token_types: Optional[Iterable] = None,
     ) -> User:
         pass
 
@@ -44,66 +43,66 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         headers={'WWW-Authenticate': 'Bearer'},
     )
 
-    @staticmethod
-    async def create_token(user_id: int, token_type: str) -> str:
+    def __init__(self, settings: Optional[SettingsABC] = settings_provider()):
+        self.settings = settings
+        self.valid_token_types = (settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE)
+
+    async def create_token(self, user_id: int, token_type: str) -> str:
         payload = {
             'user_id': user_id,
-            'exp': datetime.now() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
+            'exp': datetime.now() + timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
             'token_type': token_type,
             'jti': uuid.uuid4().hex,
         }
-        return jwt.encode(payload, settings.JWT_SECRET_KEY)
+        return jwt.encode(payload, self.settings.JWT_SECRET_KEY)
 
-    @classmethod
-    async def validate_authorization_header(cls, header: str) -> User:
+    async def validate_authorization_header(self, header: str) -> User:
         try:
             token_type, token = header.split()
         except ValueError:
-            raise cls.credentials_exception
-        if token_type != settings.JWT_TOKEN_TYPE_NAME:
-            raise cls.credentials_exception
-        return await cls.validate_token(token)
+            raise self.credentials_exception
+        if token_type != self.settings.JWT_TOKEN_TYPE_NAME:
+            raise self.credentials_exception
+        return await self.validate_token(token)
 
-    @classmethod
     async def validate_token(
-            cls,
+            self,
             token: str,
-            valid_token_types: Optional[Iterable] = VALID_TOKEN_TYPES,
+            valid_token_types: Optional[Iterable] = None,
     ) -> User:
+        valid_token_types = valid_token_types or self.valid_token_types
         try:
-            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+            payload = jwt.decode(token, self.settings.JWT_SECRET_KEY, algorithms=[self.settings.JWT_ALGORITHM])
         except JWTError:
-            raise cls.credentials_exception
-        return await cls._validate_payload(payload, valid_token_types)
+            raise self.credentials_exception
+        return await self._validate_payload(payload, valid_token_types)
 
-    @classmethod
-    async def _validate_payload(cls, payload: dict, valid_token_types: Iterable) -> User:
+    async def _validate_payload(self, payload: dict, valid_token_types: Iterable) -> User:
         user_id = payload.get('user_id')
         exp = payload.get('exp')
         token_type = payload.get('token_type')
         jti = payload.get('jti')
         if not user_id or not exp or not token_type or not jti:
-            raise cls.credentials_exception
+            raise self.credentials_exception
         try:
             token_expired_at = datetime.utcfromtimestamp(int(exp))
         except TypeError:
-            raise cls.credentials_exception
+            raise self.credentials_exception
         if token_type not in valid_token_types:
-            raise cls.credentials_exception
-        await cls._check_token_expiration(token_type, token_expired_at)
-        await cls._check_jti_is_valid_uuid(jti)
-        return await cls._get_user(user_id)
+            raise self.credentials_exception
+        await self._check_token_expiration(token_type, token_expired_at)
+        await self._check_jti_is_valid_uuid(jti)
+        return await self._get_user(user_id)
 
-    @staticmethod
-    async def _check_token_expiration(token_type: str, token_expired_at: datetime):
+    async def _check_token_expiration(self, token_type: str, token_expired_at: datetime):
         current_datetime = datetime.now()
         access_toke_is_expired = (
-            token_type == settings.JWT_ACCESS_TOKEN_TYPE and
-            token_expired_at < current_datetime - timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+            token_type == self.settings.JWT_ACCESS_TOKEN_TYPE and
+            token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         refresh_token_is_expired = (
-            token_type == settings.JWT_REFRESH_TOKEN_TYPE and
-            token_expired_at < current_datetime - timedelta(minutes=settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
+            token_type == self.settings.JWT_REFRESH_TOKEN_TYPE and
+            token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
         )
         if access_toke_is_expired or refresh_token_is_expired:
             raise HTTPException(
@@ -112,8 +111,7 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
                 headers={'WWW-Authenticate': 'Bearer'},
             )
 
-    @staticmethod
-    async def _check_jti_is_valid_uuid(jti: str):
+    async def _check_jti_is_valid_uuid(self, jti: str):
         try:
             uuid.UUID(jti)
         except ValueError:
@@ -123,8 +121,7 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
                 headers={'WWW-Authenticate': 'Bearer'},
             )
 
-    @staticmethod
-    async def _get_user(user_id: int) -> User:
+    async def _get_user(self, user_id: int) -> User:
         async with (db_session := DatabaseSession()):
             get_user_query = select(User).where(User.id == user_id, User.is_active == true())
             user = await db_session.scalar(get_user_query)

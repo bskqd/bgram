@@ -8,12 +8,13 @@ from accounts.models import User, UserFile
 from accounts.services.users import (
     UsersRetrieveService, UsersCreateUpdateService, UsersRetrieveServiceABC, UserFilesService,
 )
+from core.config import SettingsABC
 from core.database.repository import SQLAlchemyDatabaseRepository
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
 
 
-class UsersDependenciesProvider:
+class UsersDependenciesOverrides:
     @staticmethod
     async def get_users_db_repository(db_session: AsyncSession = Depends()):
         return SQLAlchemyDatabaseRepository(User, db_session)
@@ -27,8 +28,11 @@ class UsersDependenciesProvider:
         return UsersRetrieveService(db_repository)
 
     @staticmethod
-    async def get_users_create_update_service(db_repository: UsersDatabaseRepositoryABC = Depends()):
-        return UsersCreateUpdateService(db_repository)
+    async def get_users_create_update_service(
+            db_repository: UsersDatabaseRepositoryABC = Depends(),
+            settings: SettingsABC = Depends(),
+    ):
+        return UsersCreateUpdateService(db_repository, settings)
 
     @staticmethod
     async def get_user_files_service(db_repository: UserFilesDatabaseRepositoryABC = Depends()):

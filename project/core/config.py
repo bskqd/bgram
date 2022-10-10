@@ -1,3 +1,4 @@
+import abc
 import os
 from pathlib import Path
 
@@ -11,7 +12,11 @@ from core.contrib import redis as redis_contrib
 load_dotenv()
 
 
-class Settings(BaseSettings):
+class SettingsABC(abc.ABC):
+    pass
+
+
+class Settings(BaseSettings, SettingsABC):
     BASE_DIR = Path(__file__).resolve().parent.parent
 
     DATABASE_URL: str = os.getenv('DATABASE_URL')
@@ -47,6 +52,3 @@ class Settings(BaseSettings):
 
     MEDIA_PATH: str = os.getenv('MEDIA_PATH')
     MEDIA_URL: str = 'media'
-
-
-settings = Settings()

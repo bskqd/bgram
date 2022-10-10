@@ -4,7 +4,6 @@ from alembic import context
 
 from accounts.models import EmailConfirmationToken, User, UserFile
 from chat.models import ChatRoom, chatroom_members_association_table, ChatRoomFile, Message, MessageFile
-from core.config import settings
 from core.database.base import engine, Base
 
 __all__ = [
@@ -14,9 +13,11 @@ __all__ = [
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+from core.dependencies.providers import settings_provider
+
 config = context.config
 
-config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+config.set_main_option('sqlalchemy.url', settings_provider().DATABASE_URL)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)

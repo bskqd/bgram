@@ -8,7 +8,7 @@ from accounts.services.authorization import ConfirmationTokensCreateServiceABC, 
 from accounts.services.exceptions.authorization import InvalidConfirmationTokenException
 from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
-from core.config import settings
+from core.config import SettingsABC
 from notifications.async_tasks.email import send_email
 
 router = APIRouter()
@@ -17,6 +17,7 @@ router = APIRouter()
 @router.post('/registration')
 async def registration_view(
         user_data: user_schemas.UserCreateSchema,
+        settings: SettingsABC = Depends(),
         users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
         confirmation_tokens_create_service: ConfirmationTokensCreateServiceABC = Depends(),
 ) -> str:
@@ -49,6 +50,7 @@ async def confirm_token_view(
 @router.post('/login')
 async def login_view(
         login_data: authorization_schemas.LoginSchema,
+        settings: SettingsABC = Depends(),
         users_retrieve_service: UsersRetrieveServiceABC = Depends(),
         jwt_authentication_service: JWTAuthenticationServiceABC = Depends(),
 ) -> dict[str, str]:
@@ -64,6 +66,7 @@ async def login_view(
 @router.post('/refresh_token')
 async def refresh_token_view(
         token_data: authorization_schemas.RefreshTokenSchema,
+        settings: SettingsABC = Depends(),
         jwt_authentication_service: JWTAuthenticationServiceABC = Depends(),
 ) -> dict[str, str]:
     user = await jwt_authentication_service.validate_token(token_data.refresh_token, [settings.JWT_REFRESH_TOKEN_TYPE])

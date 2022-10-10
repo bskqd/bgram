@@ -11,13 +11,13 @@ from chat.services.messages import (
     MessageFilesFilesystemServiceABC,
 )
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
-from core.dependencies import EventPublisher
+from core.dependencies.dependencies import EventPublisher
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
 from core.tasks_scheduling.dependencies import TasksScheduler
 
 
-class MessagesDependenciesProvider:
+class MessagesDependenciesOverrides:
     @staticmethod
     async def get_messages_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
         return SQLAlchemyDatabaseRepository(Message, db_session)

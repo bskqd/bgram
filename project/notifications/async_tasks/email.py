@@ -2,10 +2,17 @@ from typing import Sequence, Union
 
 from fastapi_mail import MessageSchema, FastMail
 
-from core.config import settings
+from core.config import SettingsABC
+from core.dependencies.providers import settings_provider
 
 
-async def send_email(template_name: str, subject: str, email_to: Union[str, Sequence], template_body: dict):
+async def send_email(
+        template_name: str,
+        subject: str,
+        email_to: Union[str, Sequence],
+        template_body: dict,
+        settings: SettingsABC = settings_provider(),
+):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to] if isinstance(email_to, str) else email_to,

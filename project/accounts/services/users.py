@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.sql import Select
 
 from accounts.models import User
-from accounts.utils.users import hash_password
+from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
 from core.services.files import FilesServiceABC, FilesService
 
@@ -48,11 +48,12 @@ class UsersCreateUpdateServiceABC(abc.ABC):
 
 
 class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
-    def __init__(self, db_repository: BaseDatabaseRepository):
+    def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC):
         self.db_repository = db_repository
+        self.settings = settings
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:
-        user = User(nickname=nickname, email=email, password=hash_password(password), **kwargs)
+        user = User(nickname=nickname, email=email, password=self._hash_password(password), **kwargs)
         await self.db_repository.create(user)
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
@@ -63,6 +64,9 @@ class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user
+
+    def _hash_password(self, plain_text_password: str) -> str:
+        return self.settings.PWD_CONTEXT.hash(plain_text_password)
 
 
 class UserFilesServiceABC(FilesServiceABC, abc.ABC):

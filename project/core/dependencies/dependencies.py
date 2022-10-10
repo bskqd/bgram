@@ -1,12 +1,11 @@
 from typing import AsyncIterator
 
 from fastapi import Request
-from pydantic import BaseSettings
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
 
 from core.authentication.services.jwt_authentication import JWTAuthenticationService
+from core.config import SettingsABC
 from core.contrib.redis import redis_client
+from core.database.base import DatabaseSession
 
 
 class EventPublisher:
@@ -25,25 +24,23 @@ class EventReceiver:
         pass
 
 
-class FastapiDependenciesProvider:
-    def __init__(self, config: BaseSettings):
-        self.db_sessionmaker = sessionmaker(
-            create_async_engine(config.DATABASE_URL),
-            autoflush=False,
-            class_=AsyncSession,
-        )
+class FastapiDependenciesOverrides:
+    def __init__(self, config: SettingsABC):
+        self.config = config
+        self.db_sessionmaker = DatabaseSession
 
     async def get_db_session(self):
         async with (session := self.db_sessionmaker()):
             yield session
 
-    @staticmethod
-    async def get_authentication_service():
-        return JWTAuthenticationService
+    async def get_settings(self):
+        return self.config
 
-    @staticmethod
-    async def get_jwt_authentication_service():
-        return JWTAuthenticationService
+    async def get_authentication_service(self):
+        return JWTAuthenticationService(self.config)
+
+    async def get_jwt_authentication_service(self):
+        return JWTAuthenticationService(self.config)
 
     @staticmethod
     async def get_request_user(request: Request):

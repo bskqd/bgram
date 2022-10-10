@@ -6,8 +6,9 @@ from typing import Type, Union
 
 from fastapi import UploadFile
 
-from core.config import settings
+from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
+from core.dependencies.providers import settings_provider
 from mixins.models import FileABC
 
 
@@ -35,8 +36,9 @@ class FilesService(FilesServiceABC):
     """
     file_model: Type[FileABC] = None
 
-    def __init__(self, db_repository: BaseDatabaseRepository):
+    def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC = settings_provider()):
         self.db_repository = db_repository
+        self.settings = settings
 
     async def create_object_file(self, file: UploadFile, **kwargs) -> FileABC:
         """
@@ -76,7 +78,7 @@ class FilesService(FilesServiceABC):
         await self.remove_file_from_filesystem(file_path_to_remove)
 
     async def remove_file_from_filesystem(self, file_path: str):
-        file_path_to_remove = os.path.join(settings.MEDIA_PATH, file_path)
+        file_path_to_remove = os.path.join(self.settings.MEDIA_PATH, file_path)
         loop = asyncio.get_running_loop()
         if os.path.exists(file_path_to_remove):
             await loop.run_in_executor(None, os.remove, file_path_to_remove)
@@ -90,7 +92,7 @@ class FilesService(FilesServiceABC):
         )
 
     def write_file_to_filesystem(self, folder_to_save_file: str, filename: str, content_to_write: bytes) -> str:
-        folder_to_save_file = os.path.join(settings.MEDIA_PATH, folder_to_save_file)
+        folder_to_save_file = os.path.join(self.settings.MEDIA_PATH, folder_to_save_file)
         os.makedirs(folder_to_save_file, exist_ok=True)
         full_path_to_save_file = os.path.join(folder_to_save_file, filename)
         if os.path.exists(full_path_to_save_file):
@@ -99,4 +101,4 @@ class FilesService(FilesServiceABC):
             full_path_to_save_file = f'{path_to_save_file_without_extension}{file_extension}'
         with open(full_path_to_save_file, 'wb') as file:
             file.write(content_to_write)
-        return full_path_to_save_file.replace(settings.MEDIA_PATH, '', 1)
+        return full_path_to_save_file.replace(self.settings.MEDIA_PATH, '', 1)

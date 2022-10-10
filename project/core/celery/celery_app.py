@@ -1,6 +1,8 @@
 import asyncio
 
 from celery import Celery
+from celery.signals import worker_shutdown
+from core.database.base import DatabaseSession
 
 bgram_celery_app = Celery('bgram_celery_app')
 
@@ -12,6 +14,11 @@ bgram_celery_app.autodiscover_tasks()
 @bgram_celery_app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
     pass
+
+
+@worker_shutdown.connect()
+def worker_shutdown_handler(*args, **kwargs):
+    DatabaseSession.close_all()
 
 
 @bgram_celery_app.task

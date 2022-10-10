@@ -19,7 +19,9 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
         authorization_header = request.headers.get('Authorization')
         if authorization_header:
             try:
-                request.state.user = await JWTAuthenticationService.validate_authorization_header(authorization_header)
+                request.state.user = await JWTAuthenticationService().validate_authorization_header(
+                    authorization_header,
+                )
             except HTTPException as exception:
                 return Response(status_code=exception.status_code, content=exception.detail, headers=exception.headers)
         else:
