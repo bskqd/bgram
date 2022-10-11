@@ -1,8 +1,11 @@
 from typing import AsyncIterator
 
 from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.authentication.services.jwt_authentication import JWTAuthenticationService
+from accounts.models import User
+from core.authentication.services.authentication import AuthenticationServiceABC
+from core.authentication.services.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
 from core.config import SettingsABC
 from core.contrib.redis import redis_client
 from core.database.base import DatabaseSession
@@ -28,6 +31,17 @@ class FastapiDependenciesOverrides:
     def __init__(self, config: SettingsABC):
         self.config = config
         self.db_sessionmaker = DatabaseSession
+
+    def override_dependencies(self) -> dict:
+        return {
+            SettingsABC: self.get_settings,
+            AsyncSession: self.get_db_session,
+            AuthenticationServiceABC: self.get_authentication_service,
+            JWTAuthenticationServiceABC: self.get_jwt_authentication_service,
+            User: self.get_request_user,
+            EventPublisher: self.get_event_publisher,
+            EventReceiver: self.get_event_receiver,
+        }
 
     async def get_db_session(self):
         async with (session := self.db_sessionmaker()):

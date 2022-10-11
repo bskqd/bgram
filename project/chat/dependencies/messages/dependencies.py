@@ -1,14 +1,14 @@
 from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chat.api.filters.messages import MessagesFilterSet
-from chat.api.pagination.messages import MessagesPaginationDatabaseObjectsRetrieverStrategy
+from chat.api.filters.messages import MessagesFilterSet, MessagesFilterSetABC
+from chat.api.pagination.messages import MessagesPaginationDatabaseObjectsRetrieverStrategy, MessagesPaginatorABC
 from chat.database.repository.messages import MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC
 from chat.models import Message, MessageFile
 from chat.services.messages import (
     MessagesCreateUpdateDeleteService, MessagesRetrieveService, MessageFilesService, MessageFilesRetrieveService,
     MessagesRetrieveServiceABC, MessageFilesServiceABC, MessageFilesFilesystemService,
-    MessageFilesFilesystemServiceABC,
+    MessageFilesFilesystemServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesRetrieveServiceABC,
 )
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
 from core.dependencies.dependencies import EventPublisher
@@ -18,6 +18,20 @@ from core.tasks_scheduling.dependencies import TasksScheduler
 
 
 class MessagesDependenciesOverrides:
+    @classmethod
+    def override_dependencies(cls) -> dict:
+        return {
+            MessagesDatabaseRepositoryABC: cls.get_messages_db_repository,
+            MessageFilesDatabaseRepositoryABC: cls.get_message_files_db_repository,
+            MessagesRetrieveServiceABC: cls.get_messages_retrieve_service,
+            MessagesCreateUpdateDeleteServiceABC: cls.get_messages_create_update_delete_service,
+            MessageFilesRetrieveServiceABC: cls.get_message_files_retrieve_service,
+            MessageFilesServiceABC: cls.get_message_files_service,
+            MessagesFilterSetABC: cls.get_messages_filterset,
+            MessagesPaginatorABC: cls.get_messages_paginator,
+            MessageFilesFilesystemServiceABC: cls.get_message_files_filesystem_service,
+        }
+
     @staticmethod
     async def get_messages_db_repository(db_session: AsyncSession = Depends()) -> BaseDatabaseRepository:
         return SQLAlchemyDatabaseRepository(Message, db_session)

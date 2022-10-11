@@ -18,3 +18,8 @@ class TaskSchedulerDependenciesOverrides:
     @staticmethod
     async def get_tasks_scheduler(request: Request) -> TasksScheduler:
         return request.app.state.arq_redis_pool
+
+    def override_dependencies(self) -> dict:
+        return {
+            TasksScheduler: self.get_tasks_scheduler,
+        }
