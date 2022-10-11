@@ -9,9 +9,10 @@ from chat.dependencies.chat_rooms import ChatRoomsDependenciesOverrides
 from chat.dependencies.messages.dependencies import MessagesDependenciesOverrides
 from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.config import SettingsABC
+from core.contrib.redis import redis_client
 from core.database.base import DatabaseSession
 from core.dependencies.dependencies import FastapiDependenciesOverrides
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 from core.routers import v1
 from core.tasks_scheduling.arq_settings import create_arq_redis_pool
 from core.tasks_scheduling.dependencies import TaskSchedulerDependenciesOverrides
@@ -48,7 +49,7 @@ def fastapi_dependency_overrides_factory(config: SettingsABC) -> dict:
     }
 
 
-app = create_application(fastapi_dependency_overrides_factory, settings_provider())
+app = create_application(fastapi_dependency_overrides_factory, provide_settings())
 
 
 @app.on_event('startup')
@@ -59,4 +60,5 @@ async def open_connections():
 @app.on_event('shutdown')
 async def close_connections():
     DatabaseSession.close_all()
+    await redis_client.close()
     await app.state.arq_redis_pool.close()

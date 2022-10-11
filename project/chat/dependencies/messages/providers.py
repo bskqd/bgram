@@ -12,37 +12,31 @@ from chat.services.messages import (
     MessageFilesRetrieveServiceABC,
 )
 from core.database.repository import SQLAlchemyDatabaseRepository
-from core.dependencies.dependencies import EventPublisher
+from core.dependencies.providers import EventPublisher
 from core.tasks_scheduling.dependencies import TasksScheduler
 
 
-async def messages_db_repository_provider(db_session: AsyncSession) -> MessagesDatabaseRepositoryABC:
+def provide_messages_db_repository(db_session: AsyncSession) -> MessagesDatabaseRepositoryABC:
     return SQLAlchemyDatabaseRepository(Message, db_session)
 
 
-async def message_files_db_repository_provider(db_session: AsyncSession) -> MessageFilesDatabaseRepositoryABC:
+def provide_message_files_db_repository(db_session: AsyncSession) -> MessageFilesDatabaseRepositoryABC:
     return SQLAlchemyDatabaseRepository(MessageFile, db_session)
 
 
-async def messages_retrieve_service_provider(
-        db_repository: MessagesDatabaseRepositoryABC,
-) -> MessagesRetrieveServiceABC:
-    return MessagesRetrieveService(db_repository)
-
-
-async def message_files_retrieve_service_provider(
+def provide_message_files_retrieve_service(
         db_repository: MessageFilesDatabaseRepositoryABC,
 ) -> MessageFilesRetrieveServiceABC:
     return MessageFilesRetrieveService(db_repository)
 
 
-async def message_files_filesystem_service_provider(
+def provide_message_files_filesystem_service(
         db_repository: MessageFilesDatabaseRepositoryABC,
 ) -> MessageFilesFilesystemServiceABC:
     return MessageFilesFilesystemService(db_repository)
 
 
-async def message_files_service_provider(
+def provide_message_files_service(
         message_files_filesystem_service: MessageFilesFilesystemServiceABC,
         message_files_db_repository: MessageFilesDatabaseRepositoryABC,
         event_publisher: EventPublisher,
@@ -50,11 +44,15 @@ async def message_files_service_provider(
     return MessageFilesService(message_files_filesystem_service, message_files_db_repository, event_publisher)
 
 
-async def messages_create_update_delete_service_provider(
+def provide_messages_retrieve_service(db_repository: MessagesDatabaseRepositoryABC) -> MessagesRetrieveServiceABC:
+    return MessagesRetrieveService(db_repository)
+
+
+def provide_messages_create_update_delete_service(
         db_repository: MessagesDatabaseRepositoryABC,
         event_publisher: EventPublisher,
         message_files_service: MessageFilesServiceABC,
-        tasks_scheduler: TasksScheduler,
+        tasks_scheduler: Optional[TasksScheduler] = None,
         chat_room_id: Optional[int] = None,
         request: Optional[Request] = None,
 ) -> MessagesCreateUpdateDeleteServiceABC:

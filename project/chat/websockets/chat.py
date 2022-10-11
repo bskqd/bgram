@@ -6,7 +6,7 @@ from starlette.websockets import WebSocketState
 
 from accounts.models import User
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
-from core.dependencies.dependencies import EventReceiver, EventPublisher
+from core.dependencies.providers import EventPublisher, EventReceiver
 
 
 class WebSocketConnection:

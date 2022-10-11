@@ -8,7 +8,7 @@ from fastapi import UploadFile
 
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 from mixins.models import FileABC
 
 
@@ -36,7 +36,7 @@ class FilesService(FilesServiceABC):
     """
     file_model: Type[FileABC] = None
 
-    def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC = settings_provider()):
+    def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC = provide_settings()):
         self.db_repository = db_repository
         self.settings = settings
 

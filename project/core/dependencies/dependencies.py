@@ -1,5 +1,3 @@
-from typing import AsyncIterator
-
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,24 +5,8 @@ from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
 from core.config import SettingsABC
-from core.contrib.redis import redis_client
 from core.database.base import DatabaseSession
-
-
-class EventPublisher:
-    async def publish(self, *args):
-        pass
-
-
-class EventReceiver:
-    async def subscribe(self, *args, **kwargs):
-        pass
-
-    async def unsubscribe(self, *args):
-        pass
-
-    async def listen(self) -> AsyncIterator:
-        pass
+from core.dependencies.providers import provide_event_publisher, EventPublisher, EventReceiver, provide_event_receiver
 
 
 class FastapiDependenciesOverrides:
@@ -62,8 +44,8 @@ class FastapiDependenciesOverrides:
 
     @staticmethod
     async def get_event_publisher() -> EventPublisher:
-        return redis_client
+        return provide_event_publisher()
 
     @staticmethod
     async def get_event_receiver() -> EventReceiver:
-        return redis_client.pubsub()
+        return provide_event_receiver()

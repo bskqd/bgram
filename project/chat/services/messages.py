@@ -10,7 +10,7 @@ from chat.constants.messages import MessagesTypeEnum
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessageFile
 from core.database.repository import BaseDatabaseRepository
-from core.dependencies.dependencies import EventPublisher
+from core.dependencies.providers import EventPublisher
 from core.services.files import FilesService, FilesServiceABC
 from core.tasks_scheduling.dependencies import TasksScheduler, JobResult
 from mixins.models import FileABC
@@ -77,7 +77,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             chat_room_id: Optional[int],
             event_publisher: EventPublisher,
             message_files_service: 'MessageFilesServiceABC',
-            tasks_scheduler: TasksScheduler,
+            tasks_scheduler: Optional[TasksScheduler] = None,
     ):
         self._db_repository = db_repository
         self._chat_room_id = chat_room_id
@@ -143,8 +143,8 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             ).where(Message.id == message_id),
         )
 
-    async def update_message(self, message: Message, **kwargs) -> Message:
-        if not message.is_edited:
+    async def update_message(self, message: Message, mark_as_edited: bool = True, **kwargs) -> Message:
+        if mark_as_edited and not message.is_edited:
             kwargs['is_edited'] = True
         updated_message = await self._db_repository.update_object(message, **kwargs)
         await self._db_repository.commit()
@@ -160,9 +160,9 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return updated_message
 
     async def _schedule_message(self, message: Message) -> JobResult:
+        # TODO: raise custom exception if task scheduler is None
         return await self._tasks_scheduler.enqueue_job(
-            'execute_task_in_background',
-            'chat.tasks.messages.send_scheduled_message', task_kwargs={'scheduled_message_id': message.id},
+            'send_scheduled_message', message.id,
             _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
         )
 

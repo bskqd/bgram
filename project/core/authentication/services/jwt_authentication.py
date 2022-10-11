@@ -13,7 +13,7 @@ from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.config import SettingsABC
 from core.database.base import DatabaseSession
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 
 
 class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
@@ -43,7 +43,7 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         headers={'WWW-Authenticate': 'Bearer'},
     )
 
-    def __init__(self, settings: Optional[SettingsABC] = settings_provider()):
+    def __init__(self, settings: Optional[SettingsABC] = provide_settings()):
         self.settings = settings
         self.valid_token_types = (settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE)
 

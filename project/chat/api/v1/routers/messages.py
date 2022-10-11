@@ -19,7 +19,7 @@ from chat.services.messages import (
     MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesServiceABC,
 )
 from chat.websockets.chat import WebSocketConnection, ChatRoomsWebSocketConnectionManager
-from core.dependencies.dependencies import EventReceiver
+from core.dependencies.providers import EventReceiver
 from mixins.schemas import FilesSchema
 
 router = APIRouter()

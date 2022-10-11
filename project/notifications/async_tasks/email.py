@@ -3,7 +3,7 @@ from typing import Sequence, Union
 from fastapi_mail import MessageSchema, FastMail
 
 from core.config import SettingsABC
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 
 
 async def send_email(
@@ -11,7 +11,7 @@ async def send_email(
         subject: str,
         email_to: Union[str, Sequence],
         template_body: dict,
-        settings: SettingsABC = settings_provider(),
+        settings: SettingsABC = provide_settings(),
 ):
     message = MessageSchema(
         subject=subject,

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, validator
 
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 
 
 class FilesSchema(BaseModel):
@@ -17,7 +17,7 @@ class FilesSchema(BaseModel):
 
     @validator('file_path')
     def file_path_with_media_url(cls, value: str) -> str:  # noqa: N805
-        settings = settings_provider()
+        settings = provide_settings()
         return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}/{value}'
 
     @validator('created_at')

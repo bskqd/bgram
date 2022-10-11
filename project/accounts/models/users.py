@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
 from chat.models import chatroom_members_association_table
-from core.dependencies.providers import settings_provider
+from core.dependencies.providers import provide_settings
 from mixins.models import DateTimeABC, FileABC, DescriptionABC, IsActiveABC
 
 __all__ = ['User', 'UserFile']
@@ -24,7 +24,7 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
     )
 
     def check_password(self, plain_text_password: str) -> bool:
-        return settings_provider().PWD_CONTEXT.verify(plain_text_password, self.password)
+        return provide_settings().PWD_CONTEXT.verify(plain_text_password, self.password)
 
 
 class UserFile(FileABC):

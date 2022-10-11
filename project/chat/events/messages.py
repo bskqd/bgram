@@ -4,7 +4,7 @@ from chat.api.v1.schemas.messages import ListMessagesSchema
 from chat.constants.messages import MessagesActionTypeEnum
 from chat.models import Message
 from chat.websockets.chat import ChatRoomsWebSocketConnectionManager
-from core.dependencies.dependencies import EventPublisher
+from core.dependencies.providers import EventPublisher
 
 
 async def message_created_event(event_publisher: EventPublisher, message: Union[Message, int]):
