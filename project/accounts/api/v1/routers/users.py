@@ -6,7 +6,7 @@ from accounts.api.filters.users import UserFilterSetABC
 from accounts.api.pagination.users import UsersPaginatorABC
 from accounts.api.v1.schemas import users as user_schemas
 from accounts.api.v1.schemas.users import PaginatedUsersListSchema
-from accounts.api.v1.selectors.users import get_users_db_query
+from accounts.database.selectors.users import get_users_db_query
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
 from core.tasks_scheduling.dependencies import TasksScheduler

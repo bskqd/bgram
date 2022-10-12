@@ -164,6 +164,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return await self._tasks_scheduler.enqueue_job(
             'send_scheduled_message', message.id,
             _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
+            _job_id=message.scheduler_task_id,
         )
 
     async def delete_messages(self, message_ids: tuple[int]) -> tuple[int]:
@@ -171,6 +172,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         await messages_deleted_event(self._event_publisher, self._chat_room_id, message_ids)
         return message_ids
 
+    # TODO: cancel tasks for scheduling
     async def delete_scheduled_messages(self, message_ids: tuple[int]) -> tuple[int]:
         await self._delete_messages(message_ids, Message.message_type == MessagesTypeEnum.SCHEDULED.value)
         return message_ids

@@ -9,7 +9,7 @@ from chat.api.permissions.chat_rooms import ChatRoomPermission
 from chat.api.v1.schemas.chat_rooms import (
     PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema, ChatRoomUpdateSchema,
 )
-from chat.api.v1.selectors.chat_rooms import get_chat_rooms_db_query
+from chat.database.selectors.chat_rooms import get_chat_rooms_db_query
 from chat.models import ChatRoom
 from chat.services.chat_rooms import ChatRoomsCreateUpdateServiceABC, ChatRoomsRetrieveServiceABC
 

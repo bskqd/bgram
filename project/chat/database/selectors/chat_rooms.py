@@ -8,11 +8,11 @@ from chat.models import ChatRoom, chatroom_members_association_table
 
 def get_chat_rooms_db_query(request_user: User) -> Select:
     return select(
-        ChatRoom
+        ChatRoom,
     ).join(
-        chatroom_members_association_table
+        chatroom_members_association_table,
     ).options(
-        joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos)
+        joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos),
     ).where(
-        chatroom_members_association_table.c.user_id == request_user.id
+        chatroom_members_association_table.c.user_id == request_user.id,
     )
