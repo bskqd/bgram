@@ -1,7 +1,7 @@
 import os
 
-import aioredis
 from dotenv import load_dotenv
+from redis import asyncio as aioredis
 
 load_dotenv()
 
