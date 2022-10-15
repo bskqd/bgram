@@ -9,13 +9,13 @@ from accounts.api.v1.schemas.users import PaginatedUsersListSchema
 from accounts.database.selectors.users import get_users_db_query
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC
-from core.tasks_scheduling.dependencies import TasksScheduler
+from core.tasks_scheduling.dependencies import TasksSchedulerABC
 
 router = APIRouter()
 
 
 @router.get('/test_scheduler')
-async def test_scheduler(tasks_scheduler: TasksScheduler = Depends()):
+async def test_scheduler(tasks_scheduler: TasksSchedulerABC = Depends()):
     await tasks_scheduler.enqueue_job(
         'execute_task_in_background', 'core.celery.celery_app.test',
         _queue_name='arq:tasks_scheduling_queue', _defer_until=datetime.utcnow() + timedelta(seconds=5),

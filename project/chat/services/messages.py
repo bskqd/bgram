@@ -1,4 +1,5 @@
 import abc
+import asyncio.exceptions
 from typing import Optional, Union
 
 from fastapi import UploadFile
@@ -9,10 +10,11 @@ from sqlalchemy.sql import Select
 from chat.constants.messages import MessagesTypeEnum
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessageFile
+from chat.services.exceptions.messages import MissingTasksSchedulerException
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies.providers import EventPublisher
 from core.services.files import FilesService, FilesServiceABC
-from core.tasks_scheduling.dependencies import TasksScheduler, JobResult
+from core.tasks_scheduling.dependencies import TasksSchedulerABC, JobResult
 from mixins.models import FileABC
 
 
@@ -77,7 +79,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             chat_room_id: Optional[int],
             event_publisher: EventPublisher,
             message_files_service: 'MessageFilesServiceABC',
-            tasks_scheduler: Optional[TasksScheduler] = None,
+            tasks_scheduler: Optional[TasksSchedulerABC] = None,
     ):
         self._db_repository = db_repository
         self._chat_room_id = chat_room_id
@@ -107,6 +109,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             load_relations_after_creation: bool = True,
             **kwargs
     ) -> Message:
+        self._check_tasks_scheduler()
         created_message = await self._create_message(
             text, files, author_id, message_type=MessagesTypeEnum.SCHEDULED.value,
             load_relations_after_creation=False, **kwargs,
@@ -153,14 +156,18 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return updated_message
 
     async def update_scheduled_message(self, message: Message, **kwargs):
+        self._check_tasks_scheduler()
         updated_message = await self._db_repository.update_object(message, **kwargs)
         await self._db_repository.commit()
         await self._db_repository.refresh(updated_message)
         await self._schedule_message(updated_message)
         return updated_message
 
+    def _check_tasks_scheduler(self):
+        if not self._tasks_scheduler:
+            raise MissingTasksSchedulerException
+
     async def _schedule_message(self, message: Message) -> JobResult:
-        # TODO: raise custom exception if task scheduler is None
         return await self._tasks_scheduler.enqueue_job(
             'send_scheduled_message', message.id,
             _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
@@ -172,9 +179,21 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         await messages_deleted_event(self._event_publisher, self._chat_room_id, message_ids)
         return message_ids
 
-    # TODO: cancel tasks for scheduling
     async def delete_scheduled_messages(self, message_ids: tuple[int]) -> tuple[int]:
+        self._check_tasks_scheduler()
+        task_ids = await self._db_repository.get_many(
+            db_query=select(Message.scheduler_task_id).where(
+                Message.id.in_(message_ids),
+                Message.message_type == MessagesTypeEnum.SCHEDULED.value,
+                Message.scheduler_task_id.is_not(None),
+            ),
+        )
         await self._delete_messages(message_ids, Message.message_type == MessagesTypeEnum.SCHEDULED.value)
+        for task_id in task_ids:
+            try:
+                await self._tasks_scheduler.cancel_job(task_id)
+            except asyncio.exceptions.TimeoutError:
+                pass
         return message_ids
 
     async def _delete_messages(self, message_ids: tuple[int], *filtering_args):

@@ -13,7 +13,7 @@ from chat.services.messages import (
 )
 from core.database.repository import SQLAlchemyDatabaseRepository
 from core.dependencies.providers import EventPublisher
-from core.tasks_scheduling.dependencies import TasksScheduler
+from core.tasks_scheduling.dependencies import TasksSchedulerABC
 
 
 def provide_messages_db_repository(db_session: AsyncSession) -> MessagesDatabaseRepositoryABC:
@@ -52,7 +52,7 @@ def provide_messages_create_update_delete_service(
         db_repository: MessagesDatabaseRepositoryABC,
         event_publisher: EventPublisher,
         message_files_service: MessageFilesServiceABC,
-        tasks_scheduler: Optional[TasksScheduler] = None,
+        tasks_scheduler: Optional[TasksSchedulerABC] = None,
         chat_room_id: Optional[int] = None,
         request: Optional[Request] = None,
 ) -> MessagesCreateUpdateDeleteServiceABC:

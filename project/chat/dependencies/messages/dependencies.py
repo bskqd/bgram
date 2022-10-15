@@ -16,7 +16,7 @@ from chat.services.messages import (
 from core.dependencies.providers import EventPublisher
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
-from core.tasks_scheduling.dependencies import TasksScheduler
+from core.tasks_scheduling.dependencies import TasksSchedulerABC
 
 
 class MessagesDependenciesOverrides:
@@ -78,7 +78,7 @@ class MessagesDependenciesOverrides:
             db_repository: MessagesDatabaseRepositoryABC = Depends(),
             event_publisher: EventPublisher = Depends(),
             message_files_service: MessageFilesServiceABC = Depends(),
-            tasks_scheduler: TasksScheduler = Depends(),
+            tasks_scheduler: TasksSchedulerABC = Depends(),
     ) -> MessagesCreateUpdateDeleteServiceABC:
         chat_room_id = int(chat_room_id) if (chat_room_id := request.path_params.get('chat_room_id')) else None
         return provide_messages_create_update_delete_service(
