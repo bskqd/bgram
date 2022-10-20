@@ -124,4 +124,3 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
 
     def _get_db_query(self, *args, db_query: Optional[Select]) -> Select:
         return db_query.where(*args) if db_query is not None else select(self.model).where(*args)
-
