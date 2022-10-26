@@ -12,7 +12,7 @@ from core.permissions import UserIsAuthenticatedPermission
 
 class UserChatRoomMessagingPermissions(mixins_permissions.BasePermission):
     """
-    Permissions service class for messaging in test_chat rooms for user.
+    Permissions service class for messaging in chat rooms for user.
     """
 
     def __init__(

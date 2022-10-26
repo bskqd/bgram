@@ -18,7 +18,7 @@ class FilesSchema(BaseModel):
     @validator('file_path')
     def file_path_with_media_url(cls, value: str) -> str:  # noqa: N805
         settings = provide_settings()
-        return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}/{value}'
+        return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}{value}'
 
     @validator('created_at')
     def created_at_as_string(cls, value: datetime) -> str:  # noqa: N805

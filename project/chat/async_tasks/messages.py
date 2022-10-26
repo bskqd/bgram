@@ -10,7 +10,7 @@ from core.dependencies.providers import provide_event_publisher
 
 
 async def send_scheduled_message(job_context: dict, scheduled_message_id: int):
-    async with (db_session := db_sessionmaker()):
+    async with (db_session := db_sessionmaker()()):
         messages_db_repository = provide_messages_db_repository(db_session)
         messages_retrieve_service = provide_messages_retrieve_service(messages_db_repository)
         message = await messages_retrieve_service.get_one_message(

@@ -122,7 +122,7 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
             )
 
     async def _get_user(self, user_id: int) -> User:
-        async with (db_session := db_sessionmaker()):
+        async with (db_session := db_sessionmaker()()):
             get_user_query = select(User).where(User.id == user_id, User.is_active == true())
             user = await db_session.scalar(get_user_query)
             if user:

@@ -25,7 +25,7 @@ from mixins.schemas import FilesSchema
 router = APIRouter()
 
 
-@router.websocket('/chat_rooms/{chat_room_id}/test_chat')
+@router.websocket('/chat_rooms/{chat_room_id}/chat')
 async def chat_websocket_endpoint(
         chat_room_id: int,
         websocket: WebSocket,
