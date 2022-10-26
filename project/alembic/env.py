@@ -2,19 +2,12 @@ from logging.config import fileConfig
 
 from alembic import context
 
-from accounts.models import EmailConfirmationToken, User, UserFile
-from chat.models import ChatRoom, chatroom_members_association_table, ChatRoomFile, Message, MessageFile
-from core.database.base import engine, Base
-
-__all__ = [
-    EmailConfirmationToken, User, UserFile, ChatRoom, chatroom_members_association_table, ChatRoomFile,
-    Message, MessageFile,
-]
+from core.database.base import db_engine, Base
+from core.database.models import *  # noqa: F401, F403
+from core.dependencies.providers import provide_settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-from core.dependencies.providers import provide_settings
-
 config = context.config
 
 config.set_main_option('sqlalchemy.url', provide_settings().DATABASE_URL)
@@ -68,7 +61,7 @@ async def run_migrations_online():
         with context.begin_transaction():
             context.run_migrations()
 
-    async with engine.connect() as connection:
+    async with db_engine().connect() as connection:
         await connection.run_sync(do_migrations)
 
 

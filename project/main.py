@@ -10,7 +10,7 @@ from chat.dependencies.messages.dependencies import MessagesDependenciesOverride
 from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.config import SettingsABC
 from core.contrib.redis import redis_client
-from core.database.base import DatabaseSession
+from core.database.base import db_sessionmaker
 from core.dependencies.dependencies import FastapiDependenciesOverrides
 from core.dependencies.providers import provide_settings
 from core.routers import v1
@@ -59,6 +59,6 @@ async def open_connections():
 
 @app.on_event('shutdown')
 async def close_connections():
-    DatabaseSession.close_all()
+    db_sessionmaker().close_all()
     await redis_client.close()
     await app.state.arq_redis_pool.close()

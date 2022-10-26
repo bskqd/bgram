@@ -5,14 +5,14 @@ from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
 from core.config import SettingsABC
-from core.database.base import DatabaseSession
+from core.database.base import db_sessionmaker
 from core.dependencies.providers import provide_event_publisher, EventPublisher, EventReceiver, provide_event_receiver
 
 
 class FastapiDependenciesOverrides:
     def __init__(self, config: SettingsABC):
         self.config = config
-        self.db_sessionmaker = DatabaseSession
+        self.db_sessionmaker = db_sessionmaker()
 
     def override_dependencies(self) -> dict:
         return {

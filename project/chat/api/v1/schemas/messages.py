@@ -23,7 +23,7 @@ class ListMessagesSchema(PhotosFieldSchemaMixin):
     id: int
     is_edited: bool
     text: str
-    author: MessageAuthorSchema
+    author: Optional[MessageAuthorSchema]
     replayed_message_id: Optional[int]
     scheduled_at: Optional[datetime]
 

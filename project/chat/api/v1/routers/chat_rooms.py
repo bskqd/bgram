@@ -70,6 +70,4 @@ async def update_chat_room_view(
     members = chat_room_data.pop('members', None)
     if members:
         members = await users_retrieve_service.get_many_users(db_query=select(User).where(User.id.in_(members)))
-    return await chat_rooms_update_service.update_chat_room(
-        chat_room, members=members, **chat_room_data,
-    )
+    return await chat_rooms_update_service.update_chat_room(chat_room, members=members, **chat_room_data)
