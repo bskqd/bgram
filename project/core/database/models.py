@@ -1,7 +1,6 @@
-from sqlalchemy import MetaData
-
 from accounts.models import *  # noqa: F401, F403
 from chat.models import *  # noqa: F401, F403
+from sqlalchemy import MetaData
 
 """
 This module is used to import all the models declared in the project,

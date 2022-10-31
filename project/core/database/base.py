@@ -1,9 +1,8 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
 from core.config import SettingsABC
 from core.dependencies.providers import provide_settings
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 
 def provide_db_engine(config: SettingsABC = provide_settings()):
@@ -20,7 +19,10 @@ def provide_db_sessionmaker(config: SettingsABC = provide_settings(), create_new
     session = getattr(provide_db_sessionmaker, 'session', None)
     if not session:
         session = provide_db_sessionmaker.session = sessionmaker(
-            engine, autoflush=False, expire_on_commit=False, class_=AsyncSession,
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+            class_=AsyncSession,
         )
     return session
 

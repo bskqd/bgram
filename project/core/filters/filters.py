@@ -1,12 +1,11 @@
 import operator
-from typing import Optional, Callable, Any
+from typing import Any, Callable, Optional
 
+from core.database.base import Base
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
-
-from core.database.base import Base
 
 __all__ = ['BaseFilter', 'IntegerFilter', 'CharFilter', 'like', 'ilike', 'contains', 'icontains']
 
@@ -42,11 +41,11 @@ LOOKUP_EXPR_MAPPER: dict[str, Callable] = {
 
 class BaseFilter:
     def __init__(
-            self,
-            model_class: Optional[Base] = None,
-            field_name: Optional[str] = None,
-            lookup_expr: str = '==',
-            method_name: Optional[str] = None,
+        self,
+        model_class: Optional[Base] = None,
+        field_name: Optional[str] = None,
+        lookup_expr: str = '==',
+        method_name: Optional[str] = None,
     ):
         self.name = ''
         self.model_class = model_class
@@ -69,16 +68,19 @@ class IntegerFilter(BaseFilter):
 
 class CharFilter(BaseFilter):
     def __init__(
-            self,
-            model_class: Optional[Base] = None,
-            field_name: Optional[str] = None,
-            lookup_expr: str = '==',
-            method_name: Optional[str] = None,
-            min_length: Optional[int] = None,
-            max_length: Optional[int] = None,
+        self,
+        model_class: Optional[Base] = None,
+        field_name: Optional[str] = None,
+        lookup_expr: str = '==',
+        method_name: Optional[str] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
     ):
         super().__init__(
-            model_class=model_class, field_name=field_name, lookup_expr=lookup_expr, method_name=method_name,
+            model_class=model_class,
+            field_name=field_name,
+            lookup_expr=lookup_expr,
+            method_name=method_name,
         )
         self.min_length = min_length
         self.max_length = max_length

@@ -1,12 +1,11 @@
 import json
 from datetime import datetime
 
-from fastapi import WebSocket
-from starlette.websockets import WebSocketState
-
 from accounts.models import User
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
 from core.dependencies.providers import EventPublisher, EventReceiver
+from fastapi import WebSocket
+from starlette.websockets import WebSocketState
 
 
 class WebSocketConnection:

@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, validator
-
 from core.dependencies.providers import provide_settings
+from pydantic import BaseModel, validator
 
 
 class FilesSchema(BaseModel):
@@ -18,7 +17,7 @@ class FilesSchema(BaseModel):
     @validator('file_path')
     def file_path_with_media_url(cls, value: str) -> str:  # noqa: N805
         settings = provide_settings()
-        return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}{value}'
+        return f'{settings.HOST_DOMAIN}/{settings.MEDIA_URL}{"" if value.startswith("/") else "/"}{value}'
 
     @validator('created_at')
     def created_at_as_string(cls, value: datetime) -> str:  # noqa: N805

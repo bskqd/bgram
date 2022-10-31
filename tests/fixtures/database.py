@@ -1,7 +1,6 @@
 import pytest_asyncio
-from sqlalchemy import event
-
 from core.database.base import provide_db_engine, provide_db_sessionmaker
+from sqlalchemy import event
 
 __all__ = ['db_session']
 

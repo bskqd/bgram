@@ -1,19 +1,18 @@
 import abc
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional, Iterable
-
-from fastapi import HTTPException
-from jose import JWTError, jwt
-from sqlalchemy import select
-from sqlalchemy.sql.expression import true
-from starlette import status
+from typing import Iterable, Optional
 
 from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.config import SettingsABC
 from core.database.base import provide_db_sessionmaker
 from core.dependencies.providers import provide_settings
+from fastapi import HTTPException
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.sql.expression import true
+from starlette import status
 
 
 class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
@@ -25,9 +24,9 @@ class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
     @classmethod
     @abc.abstractmethod
     async def validate_token(
-            cls,
-            token: str,
-            valid_token_types: Optional[Iterable] = None,
+        cls,
+        token: str,
+        valid_token_types: Optional[Iterable] = None,
     ) -> User:
         pass
 
@@ -66,9 +65,9 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         return await self.validate_token(token)
 
     async def validate_token(
-            self,
-            token: str,
-            valid_token_types: Optional[Iterable] = None,
+        self,
+        token: str,
+        valid_token_types: Optional[Iterable] = None,
     ) -> User:
         valid_token_types = valid_token_types or self.valid_token_types
         try:
@@ -97,12 +96,12 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
     async def _check_token_expiration(self, token_type: str, token_expired_at: datetime):
         current_datetime = datetime.now()
         access_toke_is_expired = (
-            token_type == self.settings.JWT_ACCESS_TOKEN_TYPE and
-            token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+            token_type == self.settings.JWT_ACCESS_TOKEN_TYPE
+            and token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         refresh_token_is_expired = (
-            token_type == self.settings.JWT_REFRESH_TOKEN_TYPE and
-            token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
+            token_type == self.settings.JWT_REFRESH_TOKEN_TYPE
+            and token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
         )
         if access_toke_is_expired or refresh_token_is_expired:
             raise HTTPException(

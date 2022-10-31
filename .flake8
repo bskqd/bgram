@@ -3,4 +3,4 @@ exclude = .git,__pycache__,docs/source/conf.py,old,build,dist,venv,__init__.py,*
 inline-quotes = '
 max-line-length = 120
 select = E,F,W,C4,Q0,N80,ABS
-ignore = W504
+ignore = W503

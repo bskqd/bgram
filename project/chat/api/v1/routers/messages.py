@@ -2,24 +2,25 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, WebSocket, HTTPException, UploadFile, Form, Request, Query
-
 from accounts.models import User
 from chat.api.filters.messages import MessagesFilterSetABC
 from chat.api.pagination.messages import MessagesPaginatorABC
 from chat.api.permissions.messages import UserChatRoomMessagingPermissions, UserMessageFilesPermissions
-from chat.api.v1.schemas.messages import ListMessagesSchema, UpdateMessageSchema, PaginatedListMessagesSchema
+from chat.api.v1.schemas.messages import ListMessagesSchema, PaginatedListMessagesSchema, UpdateMessageSchema
 from chat.constants.messages import MessagesTypeEnum
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
-from chat.database.selectors.messages import get_messages_with_chat_room_id_db_query, get_message_file_db_query
+from chat.database.selectors.messages import get_message_file_db_query, get_messages_with_chat_room_id_db_query
 from chat.dependencies import chat as chat_dependencies
 from chat.models import Message, MessageFile
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
 from chat.services.messages import (
-    MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesServiceABC,
+    MessageFilesServiceABC,
+    MessagesCreateUpdateDeleteServiceABC,
+    MessagesRetrieveServiceABC,
 )
-from chat.websockets.chat import WebSocketConnection, ChatRoomsWebSocketConnectionManager
+from chat.websockets.chat import ChatRoomsWebSocketConnectionManager, WebSocketConnection
 from core.dependencies.providers import EventReceiver
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, UploadFile, WebSocket
 from mixins.schemas import FilesSchema
 
 router = APIRouter()
@@ -27,12 +28,12 @@ router = APIRouter()
 
 @router.websocket('/chat_rooms/{chat_room_id}/chat')
 async def chat_websocket_endpoint(
-        chat_room_id: int,
-        websocket: WebSocket,
-        request_user: User = Depends(chat_dependencies.get_request_user),
-        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
-        event_receiver: EventReceiver = Depends(),
-        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
+    chat_room_id: int,
+    websocket: WebSocket,
+    request_user: User = Depends(chat_dependencies.get_request_user),
+    messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+    event_receiver: EventReceiver = Depends(),
+    chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
 ):
     permissions = UserChatRoomMessagingPermissions(request_user, chat_room_id, messages_db_repository)
     try:
@@ -56,15 +57,17 @@ async def chat_websocket_endpoint(
 
 @router.get('/chat_rooms/{chat_room_id}/messages', response_model=PaginatedListMessagesSchema)
 async def list_messages_view(
-        chat_room_id: int,
-        request: Request,
-        filterset: MessagesFilterSetABC = Depends(),
-        paginator: MessagesPaginatorABC = Depends(),
+    chat_room_id: int,
+    request: Request,
+    filterset: MessagesFilterSetABC = Depends(),
+    paginator: MessagesPaginatorABC = Depends(),
 ):
     return await paginator.paginate(
         filterset.filter_db_query(
             get_messages_with_chat_room_id_db_query(
-                request, chat_room_id, Message.message_type == MessagesTypeEnum.PRIMARY.value,
+                request,
+                chat_room_id,
+                Message.message_type == MessagesTypeEnum.PRIMARY.value,
             ),
         ),
     )
@@ -72,16 +75,18 @@ async def list_messages_view(
 
 @router.get('/chat_rooms/{chat_room_id}/scheduled_messages', response_model=PaginatedListMessagesSchema)
 async def list_scheduled_messages_view(
-        chat_room_id: int,
-        request: Request,
-        request_user: User = Depends(),
-        filterset: MessagesFilterSetABC = Depends(),
-        paginator: MessagesPaginatorABC = Depends(),
+    chat_room_id: int,
+    request: Request,
+    request_user: User = Depends(),
+    filterset: MessagesFilterSetABC = Depends(),
+    paginator: MessagesPaginatorABC = Depends(),
 ):
     return await paginator.paginate(
         filterset.filter_db_query(
             get_messages_with_chat_room_id_db_query(
-                request, chat_room_id, User.id == request_user.id,
+                request,
+                chat_room_id,
+                User.id == request_user.id,
                 Message.message_type == MessagesTypeEnum.SCHEDULED.value,
             ),
         ),
@@ -90,15 +95,15 @@ async def list_scheduled_messages_view(
 
 @router.post('/chat_rooms/{chat_room_id}/messages', response_model=ListMessagesSchema)
 async def create_message_view(
-        chat_room_id: int,
-        request: Request,
-        text: str = Form(...),
-        message_type: str = Form(...),
-        scheduled_at: Optional[str] = Form(None),
-        files: Optional[list[UploadFile]] = None,
-        request_user: User = Depends(),
-        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
-        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
+    chat_room_id: int,
+    request: Request,
+    text: str = Form(...),
+    message_type: str = Form(...),
+    scheduled_at: Optional[str] = Form(None),
+    files: Optional[list[UploadFile]] = None,
+    request_user: User = Depends(),
+    messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+    messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -108,7 +113,9 @@ async def create_message_view(
     ).check_permissions()
     if message_type == MessagesTypeEnum.SCHEDULED:
         return await messages_create_update_delete_service.create_scheduled_message(
-            text, files=files, author_id=request_user.id,
+            text,
+            files=files,
+            author_id=request_user.id,
             scheduled_at=datetime.strptime(scheduled_at, '%d.%m.%Y %H:%M'),
         )
     return await messages_create_update_delete_service.create_message(text, files=files, author_id=request_user.id)
@@ -116,14 +123,14 @@ async def create_message_view(
 
 @router.patch('/chat_rooms/{chat_room_id}/messages/{message_id}', response_model=ListMessagesSchema)
 async def update_message_view(
-        chat_room_id: int,
-        message_id: int,
-        request: Request,
-        message_data: UpdateMessageSchema,
-        request_user: User = Depends(),
-        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
-        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
-        messages_retrieve_service: MessagesRetrieveServiceABC = Depends(),
+    chat_room_id: int,
+    message_id: int,
+    request: Request,
+    message_data: UpdateMessageSchema,
+    request_user: User = Depends(),
+    messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+    messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
+    messages_retrieve_service: MessagesRetrieveServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -135,7 +142,9 @@ async def update_message_view(
     message = await messages_retrieve_service.get_one_message(
         Message.id == message_id,
         db_query=get_messages_with_chat_room_id_db_query(
-            request, chat_room_id, Message.message_type.in_(
+            request,
+            chat_room_id,
+            Message.message_type.in_(
                 (MessagesTypeEnum.PRIMARY.value, MessagesTypeEnum.SCHEDULED.value),
             ),
         ),
@@ -149,13 +158,13 @@ async def update_message_view(
 
 @router.delete('/chat_rooms/{chat_room_id}/messages')
 async def delete_messages_view(
-        chat_room_id: int,
-        request: Request,
-        message_ids: tuple[int, ...] = Query(...),
-        message_type: str = Query(...),
-        request_user: User = Depends(),
-        messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
-        messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
+    chat_room_id: int,
+    request: Request,
+    message_ids: tuple[int, ...] = Query(...),
+    message_type: str = Query(...),
+    request_user: User = Depends(),
+    messages_db_repository: MessagesDatabaseRepositoryABC = Depends(),
+    messages_create_update_delete_service: MessagesCreateUpdateDeleteServiceABC = Depends(),
 ):
     await UserChatRoomMessagingPermissions(
         request_user=request_user,
@@ -172,11 +181,11 @@ async def delete_messages_view(
 
 @router.patch('/message/{message_id}/message_files/{message_file_id}', response_model=FilesSchema)
 async def replace_message_file(
-        message_file_id: int,
-        file: UploadFile,
-        request_user: User = Depends(),
-        message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
-        message_files_service: MessageFilesServiceABC = Depends(),
+    message_file_id: int,
+    file: UploadFile,
+    request_user: User = Depends(),
+    message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
+    message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
     await UserMessageFilesPermissions(
         request_user,
@@ -193,10 +202,10 @@ async def replace_message_file(
 
 @router.delete('/message/{message_id}/message_files/{message_file_id}')
 async def delete_message_file(
-        message_file_id: int,
-        request_user: User = Depends(),
-        message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
-        message_files_service: MessageFilesServiceABC = Depends(),
+    message_file_id: int,
+    request_user: User = Depends(),
+    message_files_db_repository: MessageFilesDatabaseRepositoryABC = Depends(),
+    message_files_service: MessageFilesServiceABC = Depends(),
 ) -> dict:
     await UserMessageFilesPermissions(request_user, message_file_id, message_files_db_repository).check_permissions()
     message_file = await message_files_service.get_one_message_file(

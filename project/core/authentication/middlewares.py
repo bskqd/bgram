@@ -1,7 +1,6 @@
-from fastapi import Request, HTTPException, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-
 from core.authentication.services.jwt_authentication import JWTAuthenticationService
+from fastapi import HTTPException, Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class JWTAuthenticationMiddleware(BaseHTTPMiddleware):

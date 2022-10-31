@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
-from sqlalchemy.orm import relationship
-
 from chat.constants import chat_rooms as chat_rooms_constants
 from core.database.base import Base
-from mixins.models import DateTimeABC, DescriptionABC, IsActiveABC, FileABC
+from mixins.models import DateTimeABC, DescriptionABC, FileABC, IsActiveABC
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from sqlalchemy.orm import relationship
 
 __all__ = ['chatroom_members_association_table', 'ChatRoom', 'ChatRoomFile']
 
@@ -25,7 +24,9 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
 
     photos = relationship('ChatRoomFile', back_populates='chat_room')
     members = relationship(
-        'User', secondary=chatroom_members_association_table, back_populates='chat_rooms',
+        'User',
+        secondary=chatroom_members_association_table,
+        back_populates='chat_rooms',
     )
     messages = relationship('Message', back_populates='chat_room')
 

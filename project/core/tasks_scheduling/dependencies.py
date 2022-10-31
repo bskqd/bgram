@@ -4,9 +4,8 @@ from typing import Optional
 
 from arq import ArqRedis
 from arq.jobs import Job
-from fastapi import Request
-
 from core.tasks_scheduling.constants import TASKS_SCHEDULING_QUEUE
+from fastapi import Request
 
 
 @dataclass

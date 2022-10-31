@@ -1,12 +1,11 @@
 import abc
-from typing import Optional, List, Iterable, Union
-
-from sqlalchemy import select
-from sqlalchemy.sql import Select
+from typing import Iterable, List, Optional, Union
 
 from accounts.models import User
 from chat.models import ChatRoom, chatroom_members_association_table
 from core.database.repository import BaseDatabaseRepository
+from sqlalchemy import select
+from sqlalchemy.sql import Select
 
 
 class ChatRoomsRetrieveServiceABC(abc.ABC):
@@ -42,9 +41,7 @@ class ChatRoomsRetrieveService(ChatRoomsRetrieveServiceABC):
 
     async def get_user_chat_room_ids(self, user: Union[int, User]) -> list[int]:
         user_id = user if isinstance(user, int) else user.id
-        user_chat_room_ids_query = select(
-            chatroom_members_association_table.c.room_id,
-        ).where(
+        user_chat_room_ids_query = select(chatroom_members_association_table.c.room_id).where(
             chatroom_members_association_table.c.user_id == user_id,
         )
         return await self.db_repository.get_many(db_query=user_chat_room_ids_query)
@@ -74,10 +71,7 @@ class ChatRoomsCreateUpdateService(ChatRoomsCreateUpdateServiceABC):
         return chat_room
 
     async def update_chat_room(
-            self,
-            chat_room: ChatRoom,
-            members: Optional[Iterable[User]] = None,
-            **data_for_update
+        self, chat_room: ChatRoom, members: Optional[Iterable[User]] = None, **data_for_update
     ) -> ChatRoom:
         if members is not None:
             data_for_update['members'] = members

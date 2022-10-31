@@ -1,10 +1,9 @@
 import abc
 
-from sqlalchemy.sql import Select
-
 from accounts.models import User
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
-from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC, PaginationClassABC
+from core.pagination import PaginationClassABC, PaginationDatabaseObjectsRetrieverStrategyABC
+from sqlalchemy.sql import Select
 
 
 class ChatRoomsPaginatorABC(PaginationClassABC, abc.ABC):

@@ -4,11 +4,10 @@ import os
 import uuid
 from typing import Type, Union
 
-from fastapi import UploadFile
-
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies.providers import provide_settings
+from fastapi import UploadFile
 from mixins.models import FileABC
 
 
@@ -34,6 +33,7 @@ class FilesService(FilesServiceABC):
     """
     Service class for working with files.
     """
+
     file_model: Type[FileABC] = None
 
     def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC = provide_settings()):
@@ -88,7 +88,11 @@ class FilesService(FilesServiceABC):
         filename = '_'.join(file.filename.split())
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self.write_file_to_filesystem, folder_to_save_file, filename, content_to_write,
+            None,
+            self.write_file_to_filesystem,
+            folder_to_save_file,
+            filename,
+            content_to_write,
         )
 
     def write_file_to_filesystem(self, folder_to_save_file: str, filename: str, content_to_write: bytes) -> str:
@@ -101,4 +105,4 @@ class FilesService(FilesServiceABC):
             full_path_to_save_file = f'{path_to_save_file_without_extension}{file_extension}'
         with open(full_path_to_save_file, 'wb') as file:
             file.write(content_to_write)
-        return full_path_to_save_file.replace(self.settings.MEDIA_PATH, '', 1)
+        return full_path_to_save_file.replace(self.settings.MEDIA_PATH, '', 1).lstrip('/')

@@ -1,8 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-
-from core.database.base import provide_db_engine, Base
+from core.database.base import Base, provide_db_engine
 from core.database.models import *  # noqa: F401, F403
 from core.dependencies.providers import provide_settings
 
@@ -55,6 +54,7 @@ async def run_migrations_online():
     """Run migrations in 'online' mode.
     In this scenario we need to create an Engine and associate a connection with the context.
     """
+
     def do_migrations(connection):
         context.configure(connection=connection, target_metadata=target_metadata)
 
@@ -69,4 +69,5 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     import asyncio
+
     asyncio.run(run_migrations_online())

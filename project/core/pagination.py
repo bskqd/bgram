@@ -2,10 +2,9 @@ import abc
 import math
 from typing import Tuple
 
+from core.database.base import Base
 from fastapi import Request
 from sqlalchemy.sql import Select
-
-from core.database.base import Base
 
 
 class PaginationDatabaseObjectsRetrieverStrategyABC(abc.ABC):
@@ -27,12 +26,12 @@ class PaginationClassABC(abc.ABC):
 
 class DefaultPaginationClass(PaginationClassABC):
     def __init__(
-            self,
-            request: Request,
-            db_objects_retriever_strategy: PaginationDatabaseObjectsRetrieverStrategyABC,
-            page_number_param: str = 'page',
-            page_size_param: str = 'page_size',
-            database_objects_data_keyword_in_response: str = 'data',
+        self,
+        request: Request,
+        db_objects_retriever_strategy: PaginationDatabaseObjectsRetrieverStrategyABC,
+        page_number_param: str = 'page',
+        page_size_param: str = 'page_size',
+        database_objects_data_keyword_in_response: str = 'data',
     ):
         self.request = request
         self.request_query_params = request.query_params
@@ -51,7 +50,9 @@ class DefaultPaginationClass(PaginationClassABC):
         db_objects = await self.db_objects_retriever_strategy.get_many(db_query)
         total_pages = math.ceil(total_db_objects_count / page_size)
         previous_page_url, next_page_url = self.get_previous_and_next_page_urls(
-            current_page_number, db_query_limit, total_db_objects_count,
+            current_page_number,
+            db_query_limit,
+            total_db_objects_count,
         )
         return {
             self.database_objects_data_keyword_in_response: db_objects,
@@ -64,17 +65,21 @@ class DefaultPaginationClass(PaginationClassABC):
         }
 
     def get_previous_and_next_page_urls(
-            self,
-            current_page_number: int,
-            db_query_limit: int,
-            total_db_objects_count: int,
+        self,
+        current_page_number: int,
+        db_query_limit: int,
+        total_db_objects_count: int,
     ) -> Tuple[str, str]:
         url = self.request.url
         url_contains_page_number_param: bool = bool(self.request_query_params.get(self.page_number_param))
         url = str(url)
         previous_page = self.get_previous_page_url(url, current_page_number, url_contains_page_number_param)
         next_page = self.get_next_page_url(
-            url, current_page_number, url_contains_page_number_param, db_query_limit, total_db_objects_count,
+            url,
+            current_page_number,
+            url_contains_page_number_param,
+            db_query_limit,
+            total_db_objects_count,
         )
         return previous_page, next_page
 
@@ -91,12 +96,12 @@ class DefaultPaginationClass(PaginationClassABC):
         return f'{url}?{self.page_number_param}={current_page_number - 1}'
 
     def get_next_page_url(
-            self,
-            url: str,
-            current_page_number: int,
-            url_contains_page_number_param: bool,
-            db_query_limit: int,
-            total_db_objects_count: int,
+        self,
+        url: str,
+        current_page_number: int,
+        url_contains_page_number_param: bool,
+        db_query_limit: int,
+        total_db_objects_count: int,
     ):
         if db_query_limit >= total_db_objects_count:
             return None

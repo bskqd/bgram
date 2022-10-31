@@ -1,9 +1,8 @@
 from abc import ABC
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from chat.models import ChatRoom
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ChatRoomsDatabaseRepositoryABC(BaseDatabaseRepository, ABC):

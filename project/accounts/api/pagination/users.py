@@ -1,10 +1,9 @@
 from abc import ABC
 
-from sqlalchemy.sql import Select
-
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC
-from core.pagination import PaginationDatabaseObjectsRetrieverStrategyABC, PaginationClassABC
+from core.pagination import PaginationClassABC, PaginationDatabaseObjectsRetrieverStrategyABC
+from sqlalchemy.sql import Select
 
 
 class UsersPaginatorABC(PaginationClassABC, ABC):

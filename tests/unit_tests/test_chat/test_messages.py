@@ -1,5 +1,4 @@
 import pytest
-
 from chat.services.messages import MessagesCreateUpdateDeleteServiceABC
 
 

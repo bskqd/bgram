@@ -1,17 +1,19 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-
 from accounts.models import User
 from accounts.services.users import UsersRetrieveServiceABC
 from chat.api.pagination.chat_rooms import ChatRoomsPaginatorABC
 from chat.api.permissions.chat_rooms import ChatRoomPermission
 from chat.api.v1.schemas.chat_rooms import (
-    PaginatedChatRoomsListSchema, ChatRoomDetailSchema, ChatRoomCreateSchema, ChatRoomUpdateSchema,
+    ChatRoomCreateSchema,
+    ChatRoomDetailSchema,
+    ChatRoomUpdateSchema,
+    PaginatedChatRoomsListSchema,
 )
 from chat.database.selectors.chat_rooms import get_chat_rooms_db_query
 from chat.models import ChatRoom
 from chat.services.chat_rooms import ChatRoomsCreateUpdateServiceABC, ChatRoomsRetrieveServiceABC
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 router = APIRouter()
 
@@ -24,9 +26,9 @@ async def list_chat_rooms_view(request_user: User = Depends(), paginator: ChatRo
 
 @router.get('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
 async def retrieve_chat_room_view(
-        chat_room_id: int,
-        request_user: User = Depends(),
-        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
+    chat_room_id: int,
+    request_user: User = Depends(),
+    chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
 ):
     await ChatRoomPermission(request_user).check_permissions()
     return await chat_rooms_retrieve_service.get_one_chat_room(
@@ -37,10 +39,10 @@ async def retrieve_chat_room_view(
 
 @router.post('/chat_rooms', response_model=ChatRoomDetailSchema)
 async def create_chat_room_view(
-        chat_room_data: ChatRoomCreateSchema,
-        request_user: User = Depends(),
-        chat_rooms_create_service: ChatRoomsCreateUpdateServiceABC = Depends(),
-        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
+    chat_room_data: ChatRoomCreateSchema,
+    request_user: User = Depends(),
+    chat_rooms_create_service: ChatRoomsCreateUpdateServiceABC = Depends(),
+    chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
 ):
     await ChatRoomPermission(request_user).check_permissions()
     chat_room_data = chat_room_data.dict()
@@ -50,19 +52,20 @@ async def create_chat_room_view(
     return await chat_rooms_retrieve_service.get_one_chat_room(
         ChatRoom.id == chat_room.id,
         db_query=select(ChatRoom).options(
-            joinedload(ChatRoom.members).load_only(User.id), joinedload(ChatRoom.photos),
+            joinedload(ChatRoom.members).load_only(User.id),
+            joinedload(ChatRoom.photos),
         ),
     )
 
 
 @router.patch('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
 async def update_chat_room_view(
-        chat_room_id: int,
-        chat_room_data: ChatRoomUpdateSchema,
-        request_user: User = Depends(),
-        chat_rooms_update_service: ChatRoomsCreateUpdateServiceABC = Depends(),
-        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
-        users_retrieve_service: UsersRetrieveServiceABC = Depends(),
+    chat_room_id: int,
+    chat_room_data: ChatRoomUpdateSchema,
+    request_user: User = Depends(),
+    chat_rooms_update_service: ChatRoomsCreateUpdateServiceABC = Depends(),
+    chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
+    users_retrieve_service: UsersRetrieveServiceABC = Depends(),
 ):
     await ChatRoomPermission(request_user).check_permissions()
     chat_room = await chat_rooms_retrieve_service.get_one_chat_room(ChatRoom.id == chat_room_id)

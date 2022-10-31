@@ -1,14 +1,13 @@
 import abc
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
-
-from accounts.models import User, EmailConfirmationToken
+from accounts.models import EmailConfirmationToken, User
 from accounts.services.exceptions.authorization import InvalidConfirmationTokenException
 from accounts.services.users import UsersCreateUpdateServiceABC
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies.providers import provide_settings
+from sqlalchemy import select
 
 
 class ConfirmationTokensCreateServiceABC(abc.ABC):
@@ -37,24 +36,30 @@ class ConfirmationTokensConfirmServiceABC(abc.ABC):
 
 class EmailConfirmationTokensConfirmService(ConfirmationTokensConfirmServiceABC):
     def __init__(
-            self,
-            users_db_repository: BaseDatabaseRepository,
-            users_update_service: UsersCreateUpdateServiceABC,
-            settings: SettingsABC = provide_settings(),
+        self,
+        users_db_repository: BaseDatabaseRepository,
+        users_update_service: UsersCreateUpdateServiceABC,
+        settings: SettingsABC = provide_settings(),
     ):
         self.users_db_repository = users_db_repository
         self.users_update_service = users_update_service
         self.settings = settings
 
     async def confirm_confirmation_token(self, user: User, token: str):
-        token_is_valid_query = select(User).join(
-            User.email_confirmation_tokens,
-        ).where(
-            User.id == user.id,
-            EmailConfirmationToken.created_at >= datetime.now() - timedelta(
-                self.settings.CONFIRMATION_TOKEN_VALID_HOURS,
-            ),
-            EmailConfirmationToken.token == token,
+        token_is_valid_query = (
+            select(User)
+            .join(
+                User.email_confirmation_tokens,
+            )
+            .where(
+                User.id == user.id,
+                EmailConfirmationToken.created_at
+                >= datetime.now()
+                - timedelta(
+                    self.settings.CONFIRMATION_TOKEN_VALID_HOURS,
+                ),
+                EmailConfirmationToken.token == token,
+            )
         )
         is_token_valid = await self.users_db_repository.exists(db_query=token_is_valid_query)
         if not is_token_valid:

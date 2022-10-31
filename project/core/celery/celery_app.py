@@ -2,7 +2,6 @@ import asyncio
 
 from celery import Celery
 from celery.signals import worker_shutdown
-
 from core.database.base import provide_db_sessionmaker
 
 bgram_celery_app = Celery('bgram_celery_app')

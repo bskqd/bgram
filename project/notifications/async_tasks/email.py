@@ -1,17 +1,16 @@
 from typing import Sequence, Union
 
-from fastapi_mail import MessageSchema, FastMail
-
 from core.config import SettingsABC
 from core.dependencies.providers import provide_settings
+from fastapi_mail import FastMail, MessageSchema
 
 
 async def send_email(
-        template_name: str,
-        subject: str,
-        email_to: Union[str, Sequence],
-        template_body: dict,
-        settings: SettingsABC = provide_settings(),
+    template_name: str,
+    subject: str,
+    email_to: Union[str, Sequence],
+    template_body: dict,
+    settings: SettingsABC = provide_settings(),
 ):
     message = MessageSchema(
         subject=subject,

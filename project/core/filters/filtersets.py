@@ -1,11 +1,10 @@
 from collections import OrderedDict
-from typing import Type, Optional
-
-from fastapi import Request, HTTPException
-from sqlalchemy.sql import Select
+from typing import Optional, Type
 
 from core.database.base import Base
 from core.filters.filters import BaseFilter
+from fastapi import HTTPException, Request
+from sqlalchemy.sql import Select
 
 __all__ = ['FilterSetMetaclass', 'BaseFilterSet', 'FilterSet']
 
@@ -24,7 +23,9 @@ class FilterSetMetaclass(type):
 
         filters = {
             filter_name: cls.modify_filter_attributes(
-                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class,
+                filter_instance=filter_instance,
+                filter_name=filter_name,
+                model_class=model_class,
             )
             for filter_name, filter_instance in list(attrs.items())
             if isinstance(filter_instance, BaseFilter)
@@ -41,10 +42,14 @@ class FilterSetMetaclass(type):
 
         base_filters = {
             visit(filter_name): cls.modify_filter_attributes(
-                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class,
+                filter_instance=filter_instance,
+                filter_name=filter_name,
+                model_class=model_class,
             )
-            for base in bases if hasattr(base, 'filters')
-            for filter_name, filter_instance in base.filters.items() if filter_name not in known
+            for base in bases
+            if hasattr(base, 'filters')
+            for filter_name, filter_instance in base.filters.items()
+            if filter_name not in known
         }
         filters.update(base_filters)
 
@@ -52,10 +57,10 @@ class FilterSetMetaclass(type):
 
     @classmethod
     def modify_filter_attributes(
-            cls,
-            filter_instance: BaseFilter,
-            filter_name: str,
-            model_class: Type[Base],
+        cls,
+        filter_instance: BaseFilter,
+        filter_name: str,
+        model_class: Type[Base],
     ) -> BaseFilter:
         setattr(filter_instance, 'name', filter_name)
         if not filter_instance.model_class:

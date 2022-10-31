@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import Optional, List
-
-from pydantic import BaseModel, validator
+from typing import List, Optional
 
 from mixins import schemas as mixins_schemas
 from mixins.schemas import PaginatedResponseSchemaMixin
+from pydantic import BaseModel, validator
 
 
 class ChatRoomBaseSchema(BaseModel):
@@ -50,5 +49,5 @@ class ChatRoomDetailSchema(ChatRoomsListSchema):
         orm_mode = True
 
     @validator('members')
-    def members_ids(cls, value: List[ChatRoomMemberSchema]) -> List[int]:
+    def members_ids(cls, value: List[ChatRoomMemberSchema]) -> List[int]:  # noqa: N805
         return [member.id for member in value]

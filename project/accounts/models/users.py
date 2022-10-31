@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
-
 from chat.models import chatroom_members_association_table
 from core.dependencies.providers import provide_settings
-from mixins.models import DateTimeABC, FileABC, DescriptionABC, IsActiveABC
+from mixins.models import DateTimeABC, DescriptionABC, FileABC, IsActiveABC
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 __all__ = ['User', 'UserFile']
 
@@ -20,7 +19,9 @@ class User(DateTimeABC, DescriptionABC, IsActiveABC):
     photos = relationship('UserFile', back_populates='user')
     messages = relationship('Message', back_populates='author')
     chat_rooms = relationship(
-        'ChatRoom', secondary=chatroom_members_association_table, back_populates='members',
+        'ChatRoom',
+        secondary=chatroom_members_association_table,
+        back_populates='members',
     )
 
     def check_password(self, plain_text_password: str) -> bool:

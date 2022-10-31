@@ -1,6 +1,6 @@
 from typing import AsyncIterator
 
-from core.config import SettingsABC, Settings
+from core.config import Settings, SettingsABC
 from core.contrib.redis import redis_client
 
 

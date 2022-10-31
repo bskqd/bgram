@@ -1,8 +1,5 @@
 from typing import Callable
 
-from fastapi import FastAPI
-from starlette.staticfiles import StaticFiles
-
 from accounts.dependencies.authorization.dependencies import AuthorizationDependenciesOverrides
 from accounts.dependencies.users.dependencies import UsersDependenciesOverrides
 from chat.dependencies.chat_rooms.dependencies import ChatRoomsDependenciesOverrides
@@ -16,6 +13,8 @@ from core.dependencies.providers import provide_settings
 from core.routers import v1
 from core.tasks_scheduling.arq_settings import create_arq_redis_pool
 from core.tasks_scheduling.dependencies import TaskSchedulerDependenciesOverrides
+from fastapi import FastAPI
+from starlette.staticfiles import StaticFiles
 
 
 def create_application(dependency_overrides_factory: Callable, config: SettingsABC) -> FastAPI:

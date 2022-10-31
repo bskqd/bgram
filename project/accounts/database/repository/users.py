@@ -1,9 +1,8 @@
 from abc import ABC
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from accounts.models import User, UserFile
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UsersDatabaseRepositoryABC(BaseDatabaseRepository, ABC):

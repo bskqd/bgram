@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
-
 from mixins.schemas import PaginatedResponseSchemaMixin, PhotosFieldSchemaMixin
+from pydantic import BaseModel
 
 
 class UpdateMessageSchema(BaseModel):

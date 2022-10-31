@@ -1,12 +1,11 @@
-from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from accounts.models import User
 from core.authentication.services.authentication import AuthenticationServiceABC
 from core.authentication.services.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
 from core.config import SettingsABC
 from core.database.base import provide_db_sessionmaker
-from core.dependencies.providers import provide_event_publisher, EventPublisher, EventReceiver, provide_event_receiver
+from core.dependencies.providers import EventPublisher, EventReceiver, provide_event_publisher, provide_event_receiver
+from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class FastapiDependenciesOverrides:

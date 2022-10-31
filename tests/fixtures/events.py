@@ -1,6 +1,5 @@
 import pytest_asyncio
-
-from core.dependencies.providers import provide_event_publisher, EventPublisher
+from core.dependencies.providers import EventPublisher, provide_event_publisher
 
 __all__ = ['event_publisher']
 

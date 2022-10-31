@@ -1,8 +1,7 @@
-from sqlalchemy.sql import Select
-
 from accounts.models import User
 from core.filters import CharFilter, FilterSet, icontains
 from sqlalchemy import or_
+from sqlalchemy.sql import Select
 
 
 class UserFilterSetABC(FilterSet):

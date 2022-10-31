@@ -1,13 +1,19 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from accounts.database.repository.users import (
-    UsersDatabaseRepositoryABC, UserFilesDatabaseRepositoryABC, UsersDatabaseRepository, UserFilesDatabaseRepository,
+    UserFilesDatabaseRepository,
+    UserFilesDatabaseRepositoryABC,
+    UsersDatabaseRepository,
+    UsersDatabaseRepositoryABC,
 )
 from accounts.services.users import (
-    UsersRetrieveService, UsersCreateUpdateService, UserFilesService, UsersRetrieveServiceABC,
-    UsersCreateUpdateServiceABC, UserFilesServiceABC,
+    UserFilesService,
+    UserFilesServiceABC,
+    UsersCreateUpdateService,
+    UsersCreateUpdateServiceABC,
+    UsersRetrieveService,
+    UsersRetrieveServiceABC,
 )
 from core.config import SettingsABC
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def provide_users_db_repository(db_session: AsyncSession) -> UsersDatabaseRepositoryABC:
@@ -23,8 +29,8 @@ def provide_users_retrieve_service(db_repository: UsersDatabaseRepositoryABC) ->
 
 
 def provide_users_create_update_service(
-        db_repository: UsersDatabaseRepositoryABC,
-        settings: SettingsABC,
+    db_repository: UsersDatabaseRepositoryABC,
+    settings: SettingsABC,
 ) -> UsersCreateUpdateServiceABC:
     return UsersCreateUpdateService(db_repository, settings)
 

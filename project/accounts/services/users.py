@@ -1,12 +1,11 @@
 import abc
 from typing import Optional
 
-from sqlalchemy.sql import Select
-
 from accounts.models import User
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
-from core.services.files import FilesServiceABC, FilesService
+from core.services.files import FilesService, FilesServiceABC
+from sqlalchemy.sql import Select
 
 
 class UsersRetrieveServiceABC(abc.ABC):

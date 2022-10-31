@@ -20,6 +20,7 @@ async def init_models():
         await conn.run_sync(metadata.drop_all)
         await conn.run_sync(metadata.create_all)
 
+
 asyncio.run(init_models())
 
 

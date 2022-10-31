@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean, Text, DateTime, String
-from sqlalchemy.orm import relationship
-
 from chat.constants.messages import MessagesTypeEnum
 from mixins.models import DateTimeABC, FileABC
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 
 __all__ = ['Message', 'MessageFile']
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Type, Any, Optional, List, cast
+from typing import Any, List, Optional, Type, TypeVar, cast
 
-from sqlalchemy import select, update, func, delete, exists
+from sqlalchemy import delete, exists, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -63,7 +63,6 @@ class BaseDatabaseRepository(ABC):
 
 
 class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
-
     def __init__(self, model: Type[Model], db_session: AsyncSession):
         self.model = model
         self.__db_session = db_session

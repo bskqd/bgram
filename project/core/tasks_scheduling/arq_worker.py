@@ -2,7 +2,6 @@ import asyncio
 from typing import Optional
 
 from arq import Worker
-
 from chat.async_tasks.messages import send_scheduled_message
 from core.celery.celery_app import bgram_celery_app
 from core.contrib.redis import redis_client

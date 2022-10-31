@@ -1,6 +1,6 @@
 import os
 
-from arq.connections import RedisSettings, create_pool, ArqRedis
+from arq.connections import ArqRedis, RedisSettings, create_pool
 from dotenv import load_dotenv
 
 load_dotenv()

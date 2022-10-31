@@ -1,8 +1,7 @@
-from typing import Optional, List
+from typing import List, Optional
 
+from mixins.schemas import PaginatedResponseSchemaMixin, PhotosFieldSchemaMixin
 from pydantic import BaseModel, validator
-
-from mixins.schemas import PhotosFieldSchemaMixin, PaginatedResponseSchemaMixin
 
 
 class UserBaseSchema(BaseModel):
@@ -38,7 +37,7 @@ class UsersListSchema(UserBaseSchema, PhotosFieldSchemaMixin):
         orm_mode = True
 
     @validator('chat_rooms')
-    def chat_rooms_ids(cls, value: List[UserChatRoomsSchema]) -> List[int]:
+    def chat_rooms_ids(cls, value: List[UserChatRoomsSchema]) -> List[int]:  # noqa: N805
         return [chat_room.id for chat_room in value]
 
 

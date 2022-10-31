@@ -1,8 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, func, String, Integer, Boolean
-
 from core.database.base import Base
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, func
 
 
 class DateTimeABC(Base):

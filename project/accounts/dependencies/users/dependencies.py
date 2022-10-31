@@ -1,19 +1,19 @@
-from fastapi import Request, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from accounts.api.filters.users import UsersFilterSet, UserFilterSetABC
+from accounts.api.filters.users import UserFilterSetABC, UsersFilterSet
 from accounts.api.pagination.users import UsersPaginationDatabaseObjectsRetrieverStrategy, UsersPaginatorABC
-from accounts.database.repository.users import UsersDatabaseRepositoryABC, UserFilesDatabaseRepositoryABC
+from accounts.database.repository.users import UserFilesDatabaseRepositoryABC, UsersDatabaseRepositoryABC
 from accounts.dependencies.users.providers import (
-    provide_users_db_repository, provide_user_files_db_repository, provide_users_retrieve_service,
-    provide_users_create_update_service, provide_user_files_service,
+    provide_user_files_db_repository,
+    provide_user_files_service,
+    provide_users_create_update_service,
+    provide_users_db_repository,
+    provide_users_retrieve_service,
 )
-from accounts.services.users import (
-    UsersRetrieveServiceABC, UsersCreateUpdateServiceABC, UserFilesServiceABC,
-)
+from accounts.services.users import UserFilesServiceABC, UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
 from core.config import SettingsABC
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UsersDependenciesOverrides:
@@ -39,14 +39,14 @@ class UsersDependenciesOverrides:
 
     @staticmethod
     async def get_users_retrieve_service(
-            db_repository: UsersDatabaseRepositoryABC = Depends(),
+        db_repository: UsersDatabaseRepositoryABC = Depends(),
     ) -> UsersRetrieveServiceABC:
         return provide_users_retrieve_service(db_repository)
 
     @staticmethod
     async def get_users_create_update_service(
-            db_repository: UsersDatabaseRepositoryABC = Depends(),
-            settings: SettingsABC = Depends(),
+        db_repository: UsersDatabaseRepositoryABC = Depends(),
+        settings: SettingsABC = Depends(),
     ) -> UsersCreateUpdateServiceABC:
         return provide_users_create_update_service(db_repository, settings)
 
@@ -60,8 +60,8 @@ class UsersDependenciesOverrides:
 
     @staticmethod
     async def get_users_paginator(
-            request: Request,
-            users_retrieve_service: UsersRetrieveServiceABC = Depends(),
+        request: Request,
+        users_retrieve_service: UsersRetrieveServiceABC = Depends(),
     ) -> DefaultPaginationClass:
         users_db_objects_retriever_strategy = UsersPaginationDatabaseObjectsRetrieverStrategy(users_retrieve_service)
         return DefaultPaginationClass(request, users_db_objects_retriever_strategy)

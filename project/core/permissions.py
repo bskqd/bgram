@@ -1,9 +1,8 @@
 import abc
 from typing import Optional
 
-from fastapi import HTTPException
-
 from accounts.models import User
+from fastapi import HTTPException
 
 
 class BasePermission(abc.ABC):

@@ -2,11 +2,6 @@ import abc
 import asyncio.exceptions
 from typing import Optional, Union
 
-from fastapi import UploadFile
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import Select
-
 from chat.constants.messages import MessagesTypeEnum
 from chat.events.messages import message_created_event, message_updated_event, messages_deleted_event
 from chat.models import Message, MessageFile
@@ -14,8 +9,12 @@ from chat.services.exceptions.messages import MissingTasksSchedulerException
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies.providers import EventPublisher
 from core.services.files import FilesService, FilesServiceABC
-from core.tasks_scheduling.dependencies import TasksSchedulerABC, JobResult
+from core.tasks_scheduling.dependencies import JobResult, TasksSchedulerABC
+from fastapi import UploadFile
 from mixins.models import FileABC
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import Select
 
 
 class MessagesRetrieveServiceABC(abc.ABC):
@@ -74,12 +73,12 @@ class MessagesCreateUpdateDeleteServiceABC(abc.ABC):
 
 class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
     def __init__(
-            self,
-            db_repository: BaseDatabaseRepository,
-            chat_room_id: Optional[int],
-            event_publisher: EventPublisher,
-            message_files_service: 'MessageFilesServiceABC',
-            tasks_scheduler: Optional[TasksSchedulerABC] = None,
+        self,
+        db_repository: BaseDatabaseRepository,
+        chat_room_id: Optional[int],
+        event_publisher: EventPublisher,
+        message_files_service: 'MessageFilesServiceABC',
+        tasks_scheduler: Optional[TasksSchedulerABC] = None,
     ):
         self._db_repository = db_repository
         self._chat_room_id = chat_room_id
@@ -88,12 +87,12 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         self._tasks_scheduler = tasks_scheduler
 
     async def create_message(
-            self,
-            text: str,
-            files: Optional[tuple[UploadFile]] = None,
-            author_id: Optional[int] = None,
-            load_relations_after_creation: bool = True,
-            **kwargs
+        self,
+        text: str,
+        files: Optional[tuple[UploadFile]] = None,
+        author_id: Optional[int] = None,
+        load_relations_after_creation: bool = True,
+        **kwargs
     ) -> Message:
         created_message = await self._create_message(
             text, files, author_id, message_type=MessagesTypeEnum.PRIMARY.value, **kwargs
@@ -102,17 +101,21 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return created_message
 
     async def create_scheduled_message(
-            self,
-            text: str,
-            files: Optional[tuple[UploadFile]] = None,
-            author_id: Optional[int] = None,
-            load_relations_after_creation: bool = True,
-            **kwargs
+        self,
+        text: str,
+        files: Optional[tuple[UploadFile]] = None,
+        author_id: Optional[int] = None,
+        load_relations_after_creation: bool = True,
+        **kwargs
     ) -> Message:
         self._check_tasks_scheduler()
         created_message = await self._create_message(
-            text, files, author_id, message_type=MessagesTypeEnum.SCHEDULED.value,
-            load_relations_after_creation=False, **kwargs,
+            text,
+            files,
+            author_id,
+            message_type=MessagesTypeEnum.SCHEDULED.value,
+            load_relations_after_creation=False,
+            **kwargs,
         )
         task_result = await self._schedule_message(created_message)
         await self.update_scheduled_message(created_message, scheduler_task_id=task_result.job_id)
@@ -121,12 +124,12 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         return created_message
 
     async def _create_message(
-            self,
-            text: str,
-            files: Optional[tuple[UploadFile]] = None,
-            author_id: Optional[int] = None,
-            load_relations_after_creation: bool = True,
-            **kwargs
+        self,
+        text: str,
+        files: Optional[tuple[UploadFile]] = None,
+        author_id: Optional[int] = None,
+        load_relations_after_creation: bool = True,
+        **kwargs
     ) -> Message:
         message = Message(chat_room_id=self._chat_room_id, text=text, author_id=author_id, **kwargs)
         created_message = await self._db_repository.create(message)
@@ -141,9 +144,12 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
 
     async def _load_message_relations(self, message_id: int) -> Message:
         return await self._db_repository.get_one(
-            db_query=select(Message).options(
-                joinedload(Message.author), joinedload(Message.photos),
-            ).where(Message.id == message_id),
+            db_query=select(Message)
+            .options(
+                joinedload(Message.author),
+                joinedload(Message.photos),
+            )
+            .where(Message.id == message_id),
         )
 
     async def update_message(self, message: Message, mark_as_edited: bool = True, **kwargs) -> Message:
@@ -169,8 +175,10 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
 
     async def _schedule_message(self, message: Message) -> JobResult:
         return await self._tasks_scheduler.enqueue_job(
-            'send_scheduled_message', message.id,
-            _queue_name='arq:tasks_scheduling_queue', _defer_until=message.scheduled_at,
+            'send_scheduled_message',
+            message.id,
+            _queue_name='arq:tasks_scheduling_queue',
+            _defer_until=message.scheduled_at,
             _job_id=message.scheduler_task_id,
         )
 
@@ -239,7 +247,9 @@ class MessageFilesServiceABC(abc.ABC):
 
     @abc.abstractmethod
     async def change_scheduled_message_file(
-            self, replacement_file: UploadFile, message_file: Union[MessageFile, int],
+        self,
+        replacement_file: UploadFile,
+        message_file: Union[MessageFile, int],
     ) -> FileABC:
         pass
 
@@ -262,10 +272,10 @@ class MessageFilesServiceABC(abc.ABC):
 
 class MessageFilesService(MessageFilesServiceABC):
     def __init__(
-            self,
-            files_service: MessageFilesFilesystemServiceABC,
-            db_repository: BaseDatabaseRepository,
-            event_publisher: Optional[EventPublisher] = None,
+        self,
+        files_service: MessageFilesFilesystemServiceABC,
+        db_repository: BaseDatabaseRepository,
+        event_publisher: Optional[EventPublisher] = None,
     ):
         self.files_service = files_service
         self.db_repository = db_repository
@@ -281,9 +291,9 @@ class MessageFilesService(MessageFilesServiceABC):
         return await self.files_service.create_object_file(file, **kwargs)
 
     async def change_message_file(
-            self,
-            replacement_file: UploadFile,
-            message_file: Union[MessageFile, int],
+        self,
+        replacement_file: UploadFile,
+        message_file: Union[MessageFile, int],
     ) -> MessageFile:
         message_file_id = self._get_message_file_id(message_file)
         new_message_file: MessageFile = await self.files_service.change_file(message_file_id, replacement_file)
@@ -300,9 +310,9 @@ class MessageFilesService(MessageFilesServiceABC):
             await message_updated_event(self.event_publisher, message)
 
     async def change_scheduled_message_file(
-            self,
-            replacement_file: UploadFile,
-            message_file: Union[MessageFile, int],
+        self,
+        replacement_file: UploadFile,
+        message_file: Union[MessageFile, int],
     ) -> MessageFile:
         message_file_id = self._get_message_file_id(message_file)
         new_message_file: MessageFile = await self.files_service.change_file(message_file_id, replacement_file)

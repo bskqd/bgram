@@ -2,12 +2,11 @@ import abc
 import os
 from pathlib import Path
 
+from core.contrib import redis as redis_contrib
 from dotenv import load_dotenv
 from fastapi_mail import ConnectionConfig
 from passlib.context import CryptContext
 from pydantic import BaseSettings
-
-from core.contrib import redis as redis_contrib
 
 load_dotenv()
 

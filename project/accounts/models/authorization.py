@@ -1,9 +1,8 @@
 import random
 
-from sqlalchemy import Column, String, ForeignKey, Integer
-from sqlalchemy.orm import relationship
-
 from mixins.models import DateTimeABC
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 __all__ = ['EmailConfirmationToken']
 
