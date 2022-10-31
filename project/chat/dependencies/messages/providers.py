@@ -3,25 +3,26 @@ from typing import Optional
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chat.database.repository.messages import MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC
-from chat.models import Message, MessageFile
+from chat.database.repository.messages import (
+    MessagesDatabaseRepositoryABC, MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepository,
+    MessageFilesDatabaseRepository,
+)
 from chat.services.messages import (
     MessagesRetrieveService, MessageFilesFilesystemService,
     MessageFilesFilesystemServiceABC, MessagesCreateUpdateDeleteService, MessageFilesServiceABC, MessageFilesService,
     MessagesRetrieveServiceABC, MessagesCreateUpdateDeleteServiceABC, MessageFilesRetrieveService,
     MessageFilesRetrieveServiceABC,
 )
-from core.database.repository import SQLAlchemyDatabaseRepository
 from core.dependencies.providers import EventPublisher
 from core.tasks_scheduling.dependencies import TasksSchedulerABC
 
 
 def provide_messages_db_repository(db_session: AsyncSession) -> MessagesDatabaseRepositoryABC:
-    return SQLAlchemyDatabaseRepository(Message, db_session)
+    return MessagesDatabaseRepository(db_session)
 
 
 def provide_message_files_db_repository(db_session: AsyncSession) -> MessageFilesDatabaseRepositoryABC:
-    return SQLAlchemyDatabaseRepository(MessageFile, db_session)
+    return MessageFilesDatabaseRepository(db_session)
 
 
 def provide_message_files_retrieve_service(

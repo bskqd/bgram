@@ -3,14 +3,14 @@ from typing import Callable
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from accounts.dependencies.authorization import AuthorizationDependenciesOverrides
-from accounts.dependencies.users import UsersDependenciesOverrides
-from chat.dependencies.chat_rooms import ChatRoomsDependenciesOverrides
+from accounts.dependencies.authorization.dependencies import AuthorizationDependenciesOverrides
+from accounts.dependencies.users.dependencies import UsersDependenciesOverrides
+from chat.dependencies.chat_rooms.dependencies import ChatRoomsDependenciesOverrides
 from chat.dependencies.messages.dependencies import MessagesDependenciesOverrides
 from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.config import SettingsABC
 from core.contrib.redis import redis_client
-from core.database.base import db_sessionmaker
+from core.database.base import provide_db_sessionmaker
 from core.dependencies.dependencies import FastapiDependenciesOverrides
 from core.dependencies.providers import provide_settings
 from core.routers import v1
@@ -59,6 +59,6 @@ async def open_connections():
 
 @app.on_event('shutdown')
 async def close_connections():
-    db_sessionmaker().close_all()
+    provide_db_sessionmaker().close_all()
     await redis_client.close()
     await app.state.arq_redis_pool.close()

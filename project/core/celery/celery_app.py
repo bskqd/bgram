@@ -3,7 +3,7 @@ import asyncio
 from celery import Celery
 from celery.signals import worker_shutdown
 
-from core.database.base import db_sessionmaker
+from core.database.base import provide_db_sessionmaker
 
 bgram_celery_app = Celery('bgram_celery_app')
 
@@ -19,7 +19,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @worker_shutdown.connect()
 def worker_shutdown_handler(*args, **kwargs):
-    db_sessionmaker().close_all()
+    provide_db_sessionmaker().close_all()
 
 
 @bgram_celery_app.task

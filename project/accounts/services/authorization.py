@@ -8,6 +8,7 @@ from accounts.services.exceptions.authorization import InvalidConfirmationTokenE
 from accounts.services.users import UsersCreateUpdateServiceABC
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
+from core.dependencies.providers import provide_settings
 
 
 class ConfirmationTokensCreateServiceABC(abc.ABC):
@@ -16,7 +17,7 @@ class ConfirmationTokensCreateServiceABC(abc.ABC):
         pass
 
 
-class EmailConfirmationTokensCreateService:
+class EmailConfirmationTokensCreateService(ConfirmationTokensCreateServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
@@ -34,12 +35,12 @@ class ConfirmationTokensConfirmServiceABC(abc.ABC):
         pass
 
 
-class EmailConfirmationTokensConfirmService:
+class EmailConfirmationTokensConfirmService(ConfirmationTokensConfirmServiceABC):
     def __init__(
             self,
             users_db_repository: BaseDatabaseRepository,
             users_update_service: UsersCreateUpdateServiceABC,
-            settings: SettingsABC,
+            settings: SettingsABC = provide_settings(),
     ):
         self.users_db_repository = users_db_repository
         self.users_update_service = users_update_service

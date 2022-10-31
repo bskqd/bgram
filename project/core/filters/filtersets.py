@@ -10,6 +10,7 @@ from core.filters.filters import BaseFilter
 __all__ = ['FilterSetMetaclass', 'BaseFilterSet', 'FilterSet']
 
 
+# TODO: it's not necessary to instantiate a filterset on every request (view dependencies)
 class FilterSetMetaclass(type):
     def __new__(cls, name, bases, attrs):
         attrs['filters'] = cls.get_filters(bases, attrs)
@@ -23,7 +24,7 @@ class FilterSetMetaclass(type):
 
         filters = {
             filter_name: cls.modify_filter_attributes(
-                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class
+                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class,
             )
             for filter_name, filter_instance in list(attrs.items())
             if isinstance(filter_instance, BaseFilter)
@@ -40,7 +41,7 @@ class FilterSetMetaclass(type):
 
         base_filters = {
             visit(filter_name): cls.modify_filter_attributes(
-                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class
+                filter_instance=filter_instance, filter_name=filter_name, model_class=model_class,
             )
             for base in bases if hasattr(base, 'filters')
             for filter_name, filter_instance in base.filters.items() if filter_name not in known
@@ -54,7 +55,7 @@ class FilterSetMetaclass(type):
             cls,
             filter_instance: BaseFilter,
             filter_name: str,
-            model_class: Type[Base]
+            model_class: Type[Base],
     ) -> BaseFilter:
         setattr(filter_instance, 'name', filter_name)
         if not filter_instance.model_class:
@@ -63,6 +64,8 @@ class FilterSetMetaclass(type):
 
 
 class BaseFilterSet:
+    filters: dict
+
     def __init__(self, request: Request):
         self.request = request
         self.query_params = request.query_params
@@ -83,7 +86,7 @@ class BaseFilterSet:
         if method is None:
             raise HTTPException(
                 status_code=500,
-                detail=f'{filter_instance.__class__.__name__} does not have {filter_instance.method_name} method'
+                detail=f'{filter_instance.__class__.__name__} does not have {filter_instance.method_name} method',
             )
         value = filter_instance.validate_value(value)
         return method(db_query, value)

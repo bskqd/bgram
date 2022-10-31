@@ -8,9 +8,7 @@ from sqlalchemy.sql import Select
 
 from core.database.base import Base
 
-__all__ = [
-    'BaseFilter', 'IntegerFilter', 'CharFilter', 'like', 'ilike', 'contains', 'icontains',
-]
+__all__ = ['BaseFilter', 'IntegerFilter', 'CharFilter', 'like', 'ilike', 'contains', 'icontains']
 
 
 def like(model_field: InstrumentedAttribute, value: Any):
@@ -80,7 +78,7 @@ class CharFilter(BaseFilter):
             max_length: Optional[int] = None,
     ):
         super().__init__(
-            model_class=model_class, field_name=field_name, lookup_expr=lookup_expr, method_name=method_name
+            model_class=model_class, field_name=field_name, lookup_expr=lookup_expr, method_name=method_name,
         )
         self.min_length = min_length
         self.max_length = max_length

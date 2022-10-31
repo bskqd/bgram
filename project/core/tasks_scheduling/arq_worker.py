@@ -6,7 +6,7 @@ from arq import Worker
 from chat.async_tasks.messages import send_scheduled_message
 from core.celery.celery_app import bgram_celery_app
 from core.contrib.redis import redis_client
-from core.database.base import db_sessionmaker
+from core.database.base import provide_db_sessionmaker
 from core.tasks_scheduling.arq_settings import arq_redis_settings
 from core.tasks_scheduling.constants import TASKS_SCHEDULING_QUEUE
 
@@ -19,7 +19,7 @@ async def execute_task_in_background(job_context: dict, task_name: str, task_kwa
 
 
 async def on_shutdown(context: dict):
-    db_sessionmaker().close_all()
+    provide_db_sessionmaker().close_all()
     await redis_client.close()
 
 

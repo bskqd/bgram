@@ -2,7 +2,7 @@ from logging.config import fileConfig
 
 from alembic import context
 
-from core.database.base import db_engine, Base
+from core.database.base import provide_db_engine, Base
 from core.database.models import *  # noqa: F401, F403
 from core.dependencies.providers import provide_settings
 
@@ -61,7 +61,7 @@ async def run_migrations_online():
         with context.begin_transaction():
             context.run_migrations()
 
-    async with db_engine().connect() as connection:
+    async with provide_db_engine().connect() as connection:
         await connection.run_sync(do_migrations)
 
 
