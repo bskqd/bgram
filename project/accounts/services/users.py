@@ -10,11 +10,21 @@ from sqlalchemy.sql import Select
 
 class UsersRetrieveServiceABC(abc.ABC):
     @abc.abstractmethod
-    async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
+    async def get_one_user(
+        self,
+        *args,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[tuple[str]] = None,
+    ) -> User:
         pass
 
     @abc.abstractmethod
-    async def get_many_users(self, *args, db_query: Optional[Select] = None) -> list[User]:
+    async def get_many_users(
+        self,
+        *args,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[tuple[str]] = None,
+    ) -> list[User]:
         pass
 
     @abc.abstractmethod
@@ -26,11 +36,21 @@ class UsersRetrieveService(UsersRetrieveServiceABC):
     def __init__(self, db_repository: BaseDatabaseRepository):
         self.db_repository = db_repository
 
-    async def get_one_user(self, *args, db_query: Optional[Select] = None) -> User:
-        return await self.db_repository.get_one(*args, db_query=db_query)
+    async def get_one_user(
+        self,
+        *args,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[list[str]] = None,
+    ) -> User:
+        return await self.db_repository.get_one(*args, db_query=db_query, fields_to_load=fields_to_load)
 
-    async def get_many_users(self, *args, db_query: Optional[Select] = None) -> list[User]:
-        return await self.db_repository.get_many(*args, db_query=db_query)
+    async def get_many_users(
+        self,
+        *args,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[list[str]] = None,
+    ) -> list[User]:
+        return await self.db_repository.get_many(*args, db_query=db_query, fields_to_load=fields_to_load)
 
     async def count_users(self, *args, db_query: Optional[Select] = None) -> int:
         return await self.db_repository.count(*args, db_query=db_query)

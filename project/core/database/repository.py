@@ -3,6 +3,7 @@ from typing import Any, List, Optional, Type, TypeVar, cast
 
 from sqlalchemy import delete, exists, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 from sqlalchemy.sql import Select
 
 Model = TypeVar('Model')
@@ -46,11 +47,11 @@ class BaseDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_one(self, *args, db_query: Optional[Any] = None):
+    async def get_one(self, *args, db_query: Optional[Any] = None, fields_to_load: Optional[tuple[str]] = None):
         pass
 
     @abstractmethod
-    async def get_many(self, *args, db_query: Optional[Any] = None):
+    async def get_many(self, *args, db_query: Optional[Any] = None, fields_to_load: Optional[tuple[str]] = None):
         pass
 
     @abstractmethod
@@ -105,11 +106,28 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
         results = await self.__db_session.scalars(db_query)
         return results.all()
 
-    async def get_one(self, *args, db_query: Optional[Select] = None) -> Model:
-        return await self.__db_session.scalar(self._get_db_query(*args, db_query=db_query))
+    async def get_one(
+        self,
+        *args,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[tuple[str]] = None,
+    ) -> Model:
+        select_query = self._get_db_query(*args, db_query=db_query)
+        if fields_to_load:
+            select_query = select_query.options(load_only(*fields_to_load))
+        return await self.__db_session.scalar(select_query)
 
-    async def get_many(self, *args: Any, unique_results: bool = True, db_query: Optional[Select] = None) -> Model:
-        results = await self.__db_session.scalars(self._get_db_query(*args, db_query=db_query))
+    async def get_many(
+        self,
+        *args: Any,
+        unique_results: bool = True,
+        db_query: Optional[Select] = None,
+        fields_to_load: Optional[tuple[str]] = None,
+    ) -> Model:
+        select_query = self._get_db_query(*args, db_query=db_query)
+        if fields_to_load:
+            select_query = select_query.options(load_only(*fields_to_load))
+        results = await self.__db_session.scalars(select_query)
         return results.unique().all() if unique_results else results.all()
 
     async def exists(self, *args: Any, db_query: Optional[Select] = None) -> Optional[bool]:

@@ -1,3 +1,4 @@
+from accounts.services.users import UsersRetrieveServiceABC
 from chat.database.repository.chat_rooms import ChatRoomsDatabaseRepository, ChatRoomsDatabaseRepositoryABC
 from chat.services.chat_rooms import (
     ChatRoomsCreateUpdateService,
@@ -18,5 +19,7 @@ def provide_chat_rooms_retrieve_service(db_repository: ChatRoomsDatabaseReposito
 
 def provide_chat_rooms_create_update_service(
     db_repository: ChatRoomsDatabaseRepositoryABC,
+    chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC,
+    users_retrieve_service: UsersRetrieveServiceABC,
 ) -> ChatRoomsCreateUpdateServiceABC:
-    return ChatRoomsCreateUpdateService(db_repository)
+    return ChatRoomsCreateUpdateService(db_repository, chat_rooms_retrieve_service, users_retrieve_service)

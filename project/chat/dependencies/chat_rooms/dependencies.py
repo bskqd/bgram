@@ -1,3 +1,4 @@
+from accounts.services.users import UsersRetrieveServiceABC
 from chat.api.pagination.chat_rooms import ChatRoomsPaginationDatabaseObjectsRetrieverStrategy, ChatRoomsPaginatorABC
 from chat.database.repository.chat_rooms import ChatRoomsDatabaseRepositoryABC
 from chat.dependencies.chat_rooms.providers import (
@@ -34,8 +35,14 @@ class ChatRoomsDependenciesOverrides:
     @staticmethod
     async def get_chat_rooms_create_update_service(
         db_repository: ChatRoomsDatabaseRepositoryABC = Depends(),
+        chat_rooms_retrieve_service: ChatRoomsRetrieveServiceABC = Depends(),
+        users_retrieve_service: UsersRetrieveServiceABC = Depends(),
     ) -> ChatRoomsCreateUpdateServiceABC:
-        return provide_chat_rooms_create_update_service(db_repository)
+        return provide_chat_rooms_create_update_service(
+            db_repository,
+            chat_rooms_retrieve_service,
+            users_retrieve_service,
+        )
 
     @staticmethod
     async def get_chat_rooms_paginator(
