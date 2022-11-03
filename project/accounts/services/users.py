@@ -42,7 +42,7 @@ class UsersCreateUpdateServiceABC(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def update_user(self, user: User, **data_for_update) -> User:
+    async def update_user(self, user_id: int, _returning_options: Optional[tuple] = None, **data_for_update) -> User:
         pass
 
 
@@ -58,8 +58,15 @@ class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
         await self.db_repository.refresh(user)
         return user
 
-    async def update_user(self, user: User, **data_for_update) -> User:
-        user = await self.db_repository.update_object(user, **data_for_update)
+    async def update_user(self, user_id: int, _returning_options: Optional[tuple] = None, **data_for_update) -> User:
+        password = data_for_update.pop('password', None)
+        if password:
+            data_for_update['password'] = self._hash_password(password)
+        user = await self.db_repository.update(
+            User.id == user_id,
+            **data_for_update,
+            _returning_options=_returning_options,
+        )
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user

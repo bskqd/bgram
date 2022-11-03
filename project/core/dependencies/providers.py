@@ -1,15 +1,13 @@
+import functools
 from typing import AsyncIterator
 
 from core.config import Settings, SettingsABC
 from core.contrib.redis import redis_client
 
 
+@functools.lru_cache(maxsize=1)
 def provide_settings() -> SettingsABC:
-    _settings = getattr(provide_settings, '_settings', None)
-    if not _settings:
-        _settings = Settings()
-        setattr(provide_settings, '_settings', _settings)
-    return _settings
+    return Settings()
 
 
 class EventPublisher:

@@ -93,9 +93,11 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
         self.add(object_to_update)
         return object_to_update
 
-    async def update(self, *args: Any, **kwargs: Any) -> Model:
+    async def update(self, *args: Any, _returning_options: Optional[tuple] = None, **kwargs: Any) -> Model:
         update_query = update(self.model).where(*args).values(**kwargs).returning(self.model)
         select_query = select(self.model).from_statement(update_query).execution_options(synchronize_session='fetch')
+        if _returning_options:
+            select_query = select_query.options(*_returning_options)
         return await self.__db_session.scalar(select_query)
 
     async def delete(self, *args: Any) -> List[Model]:

@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class TokenConfirmationSchema(BaseModel):
+    user_id: int
     token: str
 
 

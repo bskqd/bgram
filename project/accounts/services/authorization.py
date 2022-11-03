@@ -30,7 +30,7 @@ class EmailConfirmationTokensCreateService(ConfirmationTokensCreateServiceABC):
 
 class ConfirmationTokensConfirmServiceABC(abc.ABC):
     @abc.abstractmethod
-    async def confirm_confirmation_token(self, user: User, token: str):
+    async def confirm_confirmation_token(self, user_id: int, token: str) -> User:
         pass
 
 
@@ -45,25 +45,20 @@ class EmailConfirmationTokensConfirmService(ConfirmationTokensConfirmServiceABC)
         self.users_update_service = users_update_service
         self.settings = settings
 
-    async def confirm_confirmation_token(self, user: User, token: str):
+    async def confirm_confirmation_token(self, user_id: int, token: str) -> User:
         token_is_valid_query = (
             select(User)
             .join(
                 User.email_confirmation_tokens,
             )
             .where(
-                User.id == user.id,
+                User.id == user_id,
                 EmailConfirmationToken.created_at
-                >= datetime.now()
-                - timedelta(
-                    self.settings.CONFIRMATION_TOKEN_VALID_HOURS,
-                ),
+                >= datetime.now() - timedelta(self.settings.CONFIRMATION_TOKEN_VALID_HOURS),
                 EmailConfirmationToken.token == token,
             )
         )
         is_token_valid = await self.users_db_repository.exists(db_query=token_is_valid_query)
         if not is_token_valid:
             raise InvalidConfirmationTokenException
-        await self.users_update_service.update_user(user, is_active=True)
-        await self.users_db_repository.commit()
-        await self.users_db_repository.refresh(user)
+        return await self.users_update_service.update_user(user_id, is_active=True)

@@ -25,10 +25,9 @@ async def registration_view(
     nickname = user_data.pop('nickname')
     email = user_data.pop('email')
     password = user_data.pop('password')
-    # TODO: create a separate service for proper creation of user and token and sending an email in the end
     user = await users_create_update_service.create_user(nickname, email, password, **user_data)
     token = await confirmation_tokens_create_service.create_confirmation_token(user)
-    email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?token={token.token}'}
+    email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?user_id={user.id}?token={token.token}'}
     await send_email('email_confirmation.html', 'Please confirm your email', email, template_body=email_data)
     return 'Registration is successful, confirm your email.'
 
@@ -36,14 +35,20 @@ async def registration_view(
 @router.post('/confirm_token')
 async def confirm_token_view(
     token_data: authorization_schemas.TokenConfirmationSchema,
-    request_user: User = Depends(),
     confirmation_tokens_confirm_service: ConfirmationTokensConfirmServiceABC = Depends(),
-) -> str:
+    settings: SettingsABC = Depends(),
+    jwt_authentication_service: JWTAuthenticationServiceABC = Depends(),
+) -> dict[str, str]:
     try:
-        await confirmation_tokens_confirm_service.confirm_confirmation_token(request_user, token_data.token)
+        user = await confirmation_tokens_confirm_service.confirm_confirmation_token(
+            token_data.user_id,
+            token_data.token,
+        )
     except InvalidConfirmationTokenException as e:
         raise HTTPException(status_code=404, detail=str(e))
-    return 'Token is successfully confirmed.'
+    access_token = await jwt_authentication_service.create_token(user.id, settings.JWT_ACCESS_TOKEN_TYPE)
+    refresh_token = await jwt_authentication_service.create_token(user.id, settings.JWT_REFRESH_TOKEN_TYPE)
+    return {'access_token': access_token, 'refresh_token': refresh_token}
 
 
 @router.post('/login')
@@ -55,9 +60,8 @@ async def login_view(
 ) -> dict[str, str]:
     user = await users_retrieve_service.get_one_user(User.email == login_data.email, User.is_active == true())
     if user and user.check_password(login_data.password):
-        user_id = user.id
-        access_token = await jwt_authentication_service.create_token(user_id, settings.JWT_ACCESS_TOKEN_TYPE)
-        refresh_token = await jwt_authentication_service.create_token(user_id, settings.JWT_REFRESH_TOKEN_TYPE)
+        access_token = await jwt_authentication_service.create_token(user.id, settings.JWT_ACCESS_TOKEN_TYPE)
+        refresh_token = await jwt_authentication_service.create_token(user.id, settings.JWT_REFRESH_TOKEN_TYPE)
         return {'access_token': access_token, 'refresh_token': refresh_token}
     raise HTTPException(status_code=400, detail='Invalid email or password')
 

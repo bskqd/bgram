@@ -1,4 +1,4 @@
-import random
+import uuid
 
 from mixins.models import DateTimeABC
 from sqlalchemy import Column, ForeignKey, Integer, String
@@ -8,7 +8,7 @@ __all__ = ['EmailConfirmationToken']
 
 
 def generate_token() -> str:
-    return str(random.randint(1000, 9999))
+    return uuid.uuid4().hex
 
 
 class EmailConfirmationToken(DateTimeABC):
