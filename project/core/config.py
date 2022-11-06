@@ -12,7 +12,30 @@ load_dotenv()
 
 
 class SettingsABC(abc.ABC):
-    pass
+    BASE_DIR = str
+
+    DATABASE_URL: str
+    HOST_DOMAIN: str
+
+    DATETIME_INPUT_OUTPUT_FORMAT: str
+
+    CONFIRMATION_TOKEN_VALID_HOURS: int
+    MAIL_CONFIG: ConnectionConfig
+
+    JWT_TOKEN_TYPE_NAME: str
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int
+    JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int
+    JWT_ACCESS_TOKEN_TYPE: str
+    JWT_REFRESH_TOKEN_TYPE: str
+
+    REDIS_HOST_URL: str
+
+    PWD_CONTEXT: CryptContext
+
+    MEDIA_PATH: str
+    MEDIA_URL: str
 
 
 class Settings(BaseSettings, SettingsABC):
@@ -21,7 +44,7 @@ class Settings(BaseSettings, SettingsABC):
     DATABASE_URL: str = os.getenv('DATABASE_URL')
     HOST_DOMAIN: str = os.getenv('HOST_DOMAIN', 'http://127.0.0.1:8000')
 
-    DATETIME_INPUT_OUTPUT_FORMAT = '%Y-%m-%d %H:%M:%S'
+    DATETIME_INPUT_OUTPUT_FORMAT: str = '%Y-%m-%d %H:%M:%S'
 
     CONFIRMATION_TOKEN_VALID_HOURS: int = 24
     MAIL_CONFIG: ConnectionConfig = ConnectionConfig(

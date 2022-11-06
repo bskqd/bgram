@@ -1,10 +1,13 @@
 from accounts.api.v1.schemas import authentication as authorization_schemas
 from accounts.api.v1.schemas import users as user_schemas
 from accounts.models import User
-from accounts.services.authorization import ConfirmationTokensConfirmServiceABC, ConfirmationTokensCreateServiceABC
-from accounts.services.exceptions.authorization import InvalidConfirmationTokenException
+from accounts.services.authentication.authentication import (
+    ConfirmationTokensConfirmServiceABC,
+    ConfirmationTokensCreateServiceABC,
+)
+from accounts.services.authentication.jwt_authentication import JWTAuthenticationServiceABC
+from accounts.services.exceptions.authentication import InvalidConfirmationTokenException
 from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
-from core.authentication.services.jwt_authentication import JWTAuthenticationServiceABC
 from core.config import SettingsABC
 from fastapi import APIRouter, Depends, HTTPException
 from notifications.async_tasks.email import send_email

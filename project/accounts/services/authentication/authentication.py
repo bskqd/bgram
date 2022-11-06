@@ -2,12 +2,19 @@ import abc
 from datetime import datetime, timedelta
 
 from accounts.models import EmailConfirmationToken, User
-from accounts.services.exceptions.authorization import InvalidConfirmationTokenException
+from accounts.services.exceptions.authentication import InvalidConfirmationTokenException
 from accounts.services.users import UsersCreateUpdateServiceABC
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
 from core.dependencies.providers import provide_settings
 from sqlalchemy import select
+
+
+class AuthenticationServiceABC(abc.ABC):
+    @classmethod
+    @abc.abstractmethod
+    async def validate_authorization_header(cls, header: str) -> User:
+        pass
 
 
 class ConfirmationTokensCreateServiceABC(abc.ABC):

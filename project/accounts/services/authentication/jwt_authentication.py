@@ -4,15 +4,20 @@ from datetime import datetime, timedelta
 from typing import Iterable, Optional
 
 from accounts.models import User
-from core.authentication.services.authentication import AuthenticationServiceABC
+from accounts.services.authentication.authentication import AuthenticationServiceABC
+from accounts.services.exceptions.authentication import (
+    CredentialsException,
+    InvalidJTIException,
+    InvalidUserIdException,
+    TokenExpiredException,
+)
+from accounts.services.users import UsersRetrieveServiceABC
 from core.config import SettingsABC
-from core.database.base import provide_db_sessionmaker
 from core.dependencies.providers import provide_settings
-from fastapi import HTTPException
 from jose import JWTError, jwt
 from sqlalchemy import select
+from sqlalchemy.orm import load_only
 from sqlalchemy.sql.expression import true
-from starlette import status
 
 
 class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
@@ -32,18 +37,13 @@ class JWTAuthenticationServiceABC(AuthenticationServiceABC, abc.ABC):
 
 
 class JWTAuthenticationService(JWTAuthenticationServiceABC):
-    """
-    Service class for user authentication.
-    """
-
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'},
-    )
-
-    def __init__(self, settings: Optional[SettingsABC] = provide_settings()):
+    def __init__(
+        self,
+        users_retrieve_service: UsersRetrieveServiceABC,
+        settings: Optional[SettingsABC] = provide_settings(),
+    ):
         self.settings = settings
+        self.users_retrieve_service = users_retrieve_service
         self.valid_token_types = (settings.JWT_ACCESS_TOKEN_TYPE, settings.JWT_REFRESH_TOKEN_TYPE)
 
     async def create_token(self, user_id: int, token_type: str) -> str:
@@ -59,9 +59,9 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         try:
             token_type, token = header.split()
         except ValueError:
-            raise self.credentials_exception
+            raise CredentialsException
         if token_type != self.settings.JWT_TOKEN_TYPE_NAME:
-            raise self.credentials_exception
+            raise CredentialsException
         return await self.validate_token(token)
 
     async def validate_token(
@@ -73,7 +73,7 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         try:
             payload = jwt.decode(token, self.settings.JWT_SECRET_KEY, algorithms=[self.settings.JWT_ALGORITHM])
         except JWTError:
-            raise self.credentials_exception
+            raise CredentialsException
         return await self._validate_payload(payload, valid_token_types)
 
     async def _validate_payload(self, payload: dict, valid_token_types: Iterable) -> User:
@@ -82,13 +82,13 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
         token_type = payload.get('token_type')
         jti = payload.get('jti')
         if not user_id or not exp or not token_type or not jti:
-            raise self.credentials_exception
+            raise CredentialsException
         try:
             token_expired_at = datetime.utcfromtimestamp(int(exp))
         except TypeError:
-            raise self.credentials_exception
+            raise CredentialsException
         if token_type not in valid_token_types:
-            raise self.credentials_exception
+            raise CredentialsException
         await self._check_token_expiration(token_type, token_expired_at)
         await self._check_jti_is_valid_uuid(jti)
         return await self._get_user(user_id)
@@ -104,30 +104,18 @@ class JWTAuthenticationService(JWTAuthenticationServiceABC):
             and token_expired_at < current_datetime - timedelta(minutes=self.settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES)
         )
         if access_toke_is_expired or refresh_token_is_expired:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Token is expired',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
+            raise TokenExpiredException
 
     async def _check_jti_is_valid_uuid(self, jti: str):
         try:
             uuid.UUID(jti)
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='"jti" is not a valid uuid',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
+            raise InvalidJTIException
 
     async def _get_user(self, user_id: int) -> User:
-        async with (db_session := provide_db_sessionmaker()()):
-            get_user_query = select(User).where(User.id == user_id, User.is_active == true())
-            user = await db_session.scalar(get_user_query)
-            if user:
-                return user
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='There is no active user found with such user_id.',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
+        user = await self.users_retrieve_service.get_one_user(
+            db_query=select(User).options(load_only(User.id)).where(User.id == user_id, User.is_active == true()),
+        )
+        if user:
+            return user
+        raise InvalidUserIdException

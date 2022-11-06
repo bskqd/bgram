@@ -1,6 +1,6 @@
 from abc import ABC
 
-from accounts.models.authorization import EmailConfirmationToken
+from accounts.models.authentication import EmailConfirmationToken
 from core.database.repository import BaseDatabaseRepository, SQLAlchemyDatabaseRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 

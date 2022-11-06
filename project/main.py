@@ -1,10 +1,9 @@
 from typing import Callable
 
-from accounts.dependencies.authorization.dependencies import AuthorizationDependenciesOverrides
+from accounts.dependencies.authentication.dependencies import AuthorizationDependenciesOverrides
 from accounts.dependencies.users.dependencies import UsersDependenciesOverrides
 from chat.dependencies.chat_rooms.dependencies import ChatRoomsDependenciesOverrides
 from chat.dependencies.messages.dependencies import MessagesDependenciesOverrides
-from core.authentication.middlewares import JWTAuthenticationMiddleware
 from core.config import SettingsABC
 from core.contrib.redis import redis_client
 from core.database.base import provide_db_sessionmaker
@@ -19,8 +18,6 @@ from starlette.staticfiles import StaticFiles
 
 def create_application(dependency_overrides_factory: Callable, config: SettingsABC) -> FastAPI:
     application = FastAPI()
-
-    application.add_middleware(JWTAuthenticationMiddleware)
 
     application.mount(f'/{config.MEDIA_URL}', StaticFiles(directory=config.MEDIA_PATH), name='media')
 
