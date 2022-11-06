@@ -12,7 +12,7 @@ load_dotenv()
 
 
 class SettingsABC(abc.ABC):
-    BASE_DIR = str
+    BASE_DIR: str
 
     DATABASE_URL: str
     HOST_DOMAIN: str

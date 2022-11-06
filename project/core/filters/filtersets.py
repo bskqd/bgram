@@ -9,7 +9,6 @@ from sqlalchemy.sql import Select
 __all__ = ['FilterSetMetaclass', 'BaseFilterSet', 'FilterSet']
 
 
-# TODO: it's not necessary to instantiate a filterset on every request (view dependencies)
 class FilterSetMetaclass(type):
     def __new__(cls, name, bases, attrs):
         attrs['filters'] = cls.get_filters(bases, attrs)
