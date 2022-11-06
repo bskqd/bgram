@@ -1,17 +1,33 @@
-from accounts.database.repository.authorization import (
+from accounts.database.repository.authentication import (
     ConfirmationTokenDatabaseRepository,
     ConfirmationTokenDatabaseRepositoryABC,
 )
 from accounts.database.repository.users import UsersDatabaseRepositoryABC
-from accounts.services.authorization import (
+from accounts.services.authentication.authentication import (
+    AuthenticationServiceABC,
     ConfirmationTokensConfirmServiceABC,
     ConfirmationTokensCreateServiceABC,
     EmailConfirmationTokensConfirmService,
     EmailConfirmationTokensCreateService,
 )
-from accounts.services.users import UsersCreateUpdateServiceABC
+from accounts.services.authentication.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
+from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
 from core.config import SettingsABC
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def provide_authentication_service(
+    settings: SettingsABC,
+    users_retrieve_service: UsersRetrieveServiceABC,
+) -> AuthenticationServiceABC:
+    return JWTAuthenticationService(users_retrieve_service, settings)
+
+
+def provide_jwt_authentication_service(
+    settings: SettingsABC,
+    users_retrieve_service: UsersRetrieveServiceABC,
+) -> JWTAuthenticationServiceABC:
+    return JWTAuthenticationService(users_retrieve_service, settings)
 
 
 def provide_confirmation_token_db_repository(db_session: AsyncSession) -> ConfirmationTokenDatabaseRepositoryABC:
