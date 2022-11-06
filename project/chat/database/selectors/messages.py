@@ -5,7 +5,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.sql import Select
 
 
-def get_messages_with_chat_room_id_db_query(
+def get_messages_db_query_by_chat_room_id(
     request: Request, chat_room_id: int, *args, load_relationships: bool = True
 ) -> Select:
     db_query = (

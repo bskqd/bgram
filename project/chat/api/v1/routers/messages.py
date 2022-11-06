@@ -9,7 +9,7 @@ from chat.api.permissions.messages import UserChatRoomMessagingPermissions, User
 from chat.api.v1.schemas.messages import ListMessagesSchema, PaginatedListMessagesSchema, UpdateMessageSchema
 from chat.constants.messages import MessagesTypeEnum
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
-from chat.database.selectors.messages import get_message_file_db_query, get_messages_with_chat_room_id_db_query
+from chat.database.selectors.messages import get_message_file_db_query, get_messages_db_query_by_chat_room_id
 from chat.dependencies import chat as chat_dependencies
 from chat.models import Message, MessageFile
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
@@ -64,7 +64,7 @@ async def list_messages_view(
 ):
     return await paginator.paginate(
         filterset.filter_db_query(
-            get_messages_with_chat_room_id_db_query(
+            get_messages_db_query_by_chat_room_id(
                 request,
                 chat_room_id,
                 Message.message_type == MessagesTypeEnum.PRIMARY.value,
@@ -83,7 +83,7 @@ async def list_scheduled_messages_view(
 ):
     return await paginator.paginate(
         filterset.filter_db_query(
-            get_messages_with_chat_room_id_db_query(
+            get_messages_db_query_by_chat_room_id(
                 request,
                 chat_room_id,
                 User.id == request_user.id,
@@ -141,7 +141,7 @@ async def update_message_view(
     ).check_permissions()
     message = await messages_retrieve_service.get_one_message(
         Message.id == message_id,
-        db_query=get_messages_with_chat_room_id_db_query(
+        db_query=get_messages_db_query_by_chat_room_id(
             request,
             chat_room_id,
             Message.message_type.in_(

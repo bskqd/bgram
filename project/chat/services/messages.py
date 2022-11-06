@@ -92,7 +92,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
         load_relations_after_creation: bool = True,
-        **kwargs
+        **kwargs,
     ) -> Message:
         created_message = await self._create_message(
             text, files, author_id, message_type=MessagesTypeEnum.PRIMARY.value, **kwargs
@@ -106,7 +106,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
         load_relations_after_creation: bool = True,
-        **kwargs
+        **kwargs,
     ) -> Message:
         self._check_tasks_scheduler()
         created_message = await self._create_message(
@@ -129,7 +129,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
         load_relations_after_creation: bool = True,
-        **kwargs
+        **kwargs,
     ) -> Message:
         message = Message(chat_room_id=self._chat_room_id, text=text, author_id=author_id, **kwargs)
         created_message = await self._db_repository.create(message)
@@ -152,21 +152,46 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             .where(Message.id == message_id),
         )
 
-    async def update_message(self, message: Message, mark_as_edited: bool = True, **kwargs) -> Message:
+    async def update_message(
+        self,
+        message: Union[Message, int],
+        mark_as_edited: bool = True,
+        _returning_options: Optional[tuple] = None,
+        **kwargs,
+    ) -> Message:
         if mark_as_edited and not message.is_edited:
             kwargs['is_edited'] = True
-        updated_message = await self._db_repository.update_object(message, **kwargs)
-        await self._db_repository.commit()
-        await self._db_repository.refresh(updated_message)
+        updated_message = await self._update_message(message, _returning_options, **kwargs)
         await message_updated_event(self._event_publisher, updated_message)
         return updated_message
 
-    async def update_scheduled_message(self, message: Message, **kwargs):
+    async def update_scheduled_message(
+        self,
+        message: Union[Message, int],
+        _returning_options: Optional[tuple] = None,
+        **kwargs,
+    ) -> Message:
         self._check_tasks_scheduler()
-        updated_message = await self._db_repository.update_object(message, **kwargs)
+        updated_message = await self._update_message(message, _returning_options, **kwargs)
+        await self._schedule_message(updated_message)
+        return updated_message
+
+    async def _update_message(
+        self,
+        message: Union[Message, int],
+        _returning_options: Optional[tuple] = None,
+        **kwargs,
+    ) -> Message:
+        if isinstance(message, int):
+            updated_message = await self._db_repository.update(
+                Message.id == message,
+                _returning_options=_returning_options,
+                **kwargs,
+            )
+        else:
+            updated_message = await self._db_repository.update_object(message, **kwargs)
         await self._db_repository.commit()
         await self._db_repository.refresh(updated_message)
-        await self._schedule_message(updated_message)
         return updated_message
 
     def _check_tasks_scheduler(self):
