@@ -47,7 +47,7 @@ class FilesService(FilesServiceABC):
         object_to_create_in_db = self.file_model(**kwargs)
         file_path = await self.write_file(object_to_create_in_db.folder_to_save, file)
         object_to_create_in_db.file_path = file_path
-        model_instance = await self.db_repository.create(object_to_create_in_db)
+        model_instance = await self.db_repository.create_from_object(object_to_create_in_db)
         await self.db_repository.commit()
         await self.db_repository.refresh(model_instance)
         return model_instance

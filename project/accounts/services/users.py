@@ -72,8 +72,12 @@ class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
         self.settings = settings
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:
-        user = User(nickname=nickname, email=email, password=self._hash_password(password), **kwargs)
-        await self.db_repository.create(user)
+        user = await self.db_repository.create(
+            nickname=nickname,
+            email=email,
+            password=self._hash_password(password),
+            **kwargs,
+        )
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user

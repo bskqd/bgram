@@ -81,7 +81,7 @@ class ChatRoomsCreateUpdateService(ChatRoomsCreateUpdateServiceABC):
         else:
             members = members_ids
         chat_room = ChatRoom(name=name, members=members, **kwargs)
-        chat_room = await self.db_repository.create(chat_room)
+        chat_room = await self.db_repository.create_from_object(chat_room)
         await self.db_repository.commit()
         await self.db_repository.refresh(chat_room)
         if relations_to_load_after_creation:

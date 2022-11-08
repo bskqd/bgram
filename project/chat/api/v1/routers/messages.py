@@ -9,7 +9,11 @@ from chat.api.permissions.messages import UserChatRoomMessagingPermissions, User
 from chat.api.v1.schemas.messages import ListMessagesSchema, PaginatedListMessagesSchema, UpdateMessageSchema
 from chat.constants.messages import MessagesTypeEnum
 from chat.database.repository.messages import MessageFilesDatabaseRepositoryABC, MessagesDatabaseRepositoryABC
-from chat.database.selectors.messages import get_message_file_db_query, get_messages_db_query_by_chat_room_id
+from chat.database.selectors.messages import (
+    get_chat_room_creation_relations_to_load,
+    get_message_file_db_query,
+    get_messages_db_query_by_chat_room_id,
+)
 from chat.dependencies import chat as chat_dependencies
 from chat.models import Message, MessageFile
 from chat.services.chat_rooms import ChatRoomsRetrieveServiceABC
@@ -117,8 +121,14 @@ async def create_message_view(
             files=files,
             author_id=request_user.id,
             scheduled_at=datetime.strptime(scheduled_at, '%d.%m.%Y %H:%M'),
+            relations_to_load_after_creation=get_chat_room_creation_relations_to_load(),
         )
-    return await messages_create_update_delete_service.create_message(text, files=files, author_id=request_user.id)
+    return await messages_create_update_delete_service.create_message(
+        text,
+        files=files,
+        author_id=request_user.id,
+        relations_to_load_after_creation=get_chat_room_creation_relations_to_load(),
+    )
 
 
 @router.patch('/chat_rooms/{chat_room_id}/messages/{message_id}', response_model=ListMessagesSchema)

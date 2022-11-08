@@ -29,7 +29,7 @@ class EmailConfirmationTokensCreateService(ConfirmationTokensCreateServiceABC):
 
     async def create_confirmation_token(self, user: User) -> EmailConfirmationToken:
         token = EmailConfirmationToken(user=user)
-        token = await self.db_repository.create(token)
+        token = await self.db_repository.create_from_object(token)
         await self.db_repository.commit()
         await self.db_repository.refresh(token)
         return token

@@ -13,7 +13,6 @@ from core.tasks_scheduling.dependencies import JobResult, TasksSchedulerABC
 from fastapi import UploadFile
 from mixins.models import FileABC
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import Select
 
 
@@ -91,11 +90,16 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         text: str,
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
-        load_relations_after_creation: bool = True,
+        relations_to_load_after_creation: Optional[tuple] = None,
         **kwargs,
     ) -> Message:
         created_message = await self._create_message(
-            text, files, author_id, message_type=MessagesTypeEnum.PRIMARY.value, **kwargs
+            text,
+            files,
+            author_id,
+            message_type=MessagesTypeEnum.PRIMARY.value,
+            relations_to_load_after_creation=relations_to_load_after_creation,
+            **kwargs,
         )
         await message_created_event(self._event_publisher, created_message)
         return created_message
@@ -105,7 +109,7 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         text: str,
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
-        load_relations_after_creation: bool = True,
+        relations_to_load_after_creation: Optional[tuple] = None,
         **kwargs,
     ) -> Message:
         self._check_tasks_scheduler()
@@ -114,13 +118,15 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
             files,
             author_id,
             message_type=MessagesTypeEnum.SCHEDULED.value,
-            load_relations_after_creation=False,
             **kwargs,
         )
         task_result = await self._schedule_message(created_message)
         await self.update_scheduled_message(created_message, scheduler_task_id=task_result.job_id)
-        if load_relations_after_creation:
-            created_message = await self._load_message_relations(created_message.id)
+        if relations_to_load_after_creation:
+            created_message = await self._load_message_relations(
+                created_message.id,
+                relations_to_load=relations_to_load_after_creation,
+            )
         return created_message
 
     async def _create_message(
@@ -128,28 +134,22 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
         text: str,
         files: Optional[tuple[UploadFile]] = None,
         author_id: Optional[int] = None,
-        load_relations_after_creation: bool = True,
+        relations_to_load_after_creation: Optional[tuple] = None,
         **kwargs,
     ) -> Message:
         message = Message(chat_room_id=self._chat_room_id, text=text, author_id=author_id, **kwargs)
-        created_message = await self._db_repository.create(message)
+        created_message = await self._db_repository.create_from_object(message)
         await self._db_repository.commit()
-        await self._db_repository.refresh(created_message)
         if files:
             for file in files:
                 await self._message_files_service.create_object_file(file, message_id=created_message.id)
-        if load_relations_after_creation:
-            return await self._load_message_relations(created_message.id)
+        if relations_to_load_after_creation:
+            return await self._load_message_relations(created_message.id, relations_to_load_after_creation)
         return created_message
 
-    async def _load_message_relations(self, message_id: int) -> Message:
+    async def _load_message_relations(self, message_id: int, relations_to_load: Optional[tuple] = None) -> Message:
         return await self._db_repository.get_one(
-            db_query=select(Message)
-            .options(
-                joinedload(Message.author),
-                joinedload(Message.photos),
-            )
-            .where(Message.id == message_id),
+            db_query=select(Message).options(*relations_to_load).where(Message.id == message_id),
         )
 
     async def update_message(
@@ -229,10 +229,20 @@ class MessagesCreateUpdateDeleteService(MessagesCreateUpdateDeleteServiceABC):
                 pass
         return message_ids
 
-    async def _delete_messages(self, message_ids: tuple[int], *filtering_args):
-        await self._db_repository.delete(Message.id.in_(message_ids), *filtering_args)
+    async def _delete_messages(
+        self,
+        message_ids: tuple[int],
+        *filtering_args,
+        returning_fields: Optional[tuple] = None,
+    ) -> list:
+        returning = await self._db_repository.delete(
+            Message.id.in_(message_ids),
+            *filtering_args,
+            _returning_fields=returning_fields,
+        )
         await self._db_repository.commit()
         await self._message_files_service.delete_message_files_from_filesystem(Message.id.in_(message_ids))
+        return returning
 
 
 class MessageFilesRetrieveServiceABC(abc.ABC):

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type, TypeVar, cast
 
-from sqlalchemy import delete, exists, func, select, update
+from sqlalchemy import delete, exists, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql import Select
@@ -13,6 +13,10 @@ class BaseDatabaseRepository(ABC):
     @abstractmethod
     def add(self, object_to_add) -> None:
         pass
+
+    @abstractmethod
+    async def flush(self):
+        await self.__db_session.flush()
 
     @abstractmethod
     async def commit(self) -> None:
@@ -27,11 +31,11 @@ class BaseDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, *args, **kwargs):
+    async def create_from_object(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    async def bulk_create(self, *args) -> None:
+    async def create(self, *args, **kwargs):
         pass
 
     @abstractmethod
@@ -43,7 +47,7 @@ class BaseDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete(self, *args):
+    async def delete(self, *args, **kwargs):
         pass
 
     @abstractmethod
@@ -71,22 +75,29 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
     def add(self, object_to_add: Model) -> None:
         self.__db_session.add(object_to_add)
 
-    async def commit(self) -> None:
+    async def flush(self):
+        await self.__db_session.flush()
+
+    async def commit(self):
         await self.__db_session.commit()
 
     async def refresh(self, object_to_refresh: Model) -> None:
         await self.__db_session.refresh(object_to_refresh)
 
-    async def rollback(self) -> None:
+    async def rollback(self):
         await self.__db_session.rollback()
 
-    async def create(self, object_to_create: Optional[Model] = None, **kwargs: Any) -> Model:
+    async def create_from_object(self, object_to_create: Optional[Model] = None, **kwargs: Any) -> Model:
         object_to_create = object_to_create if object_to_create else self.model(**kwargs)
         self.add(object_to_create)
         return object_to_create
 
-    async def bulk_create(self, *instances) -> None:
-        return await self.__db_session.bulk_save_objects(*instances)
+    async def create(self, _returning_options: Optional[tuple] = None, **kwargs: Any) -> Model:
+        create_query = insert(self.model).values(**kwargs).returning(self.model)
+        select_query = select(self.model).from_statement(create_query).execution_options(synchronize_session='fetch')
+        if _returning_options:
+            select_query = select_query.options(*_returning_options)
+        return await self.__db_session.scalar(select_query)
 
     async def update_object(self, object_to_update: Model, **kwargs) -> Model:
         for attr, value in kwargs.items():
@@ -101,10 +112,14 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
             select_query = select_query.options(*_returning_options)
         return await self.__db_session.scalar(select_query)
 
-    async def delete(self, *args: Any) -> List[Model]:
-        db_query = delete(self.model).where(*args).returning('*')
-        results = await self.__db_session.scalars(db_query)
-        return results.all()
+    async def delete(self, *args: Any, _returning_fields: Optional[tuple] = None) -> List[Model]:
+        delete_query = delete(self.model).where(*args)
+        if _returning_fields:
+            delete_query = delete_query.returning(*_returning_fields)
+        # select_query = select(self.model).from_statement(delete_query).execution_options(synchronize_session='fetch')
+        # results = await self.__db_session.scalars(select_query)
+        # return results.all()
+        await self.__db_session.scalars(delete_query)
 
     async def get_one(
         self,

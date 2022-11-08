@@ -1,3 +1,5 @@
+import functools
+
 from chat.models import Message, MessageFile
 from fastapi import Request
 from sqlalchemy import select
@@ -40,3 +42,11 @@ def get_message_file_db_query(*args, load_relationships: bool = True) -> Select:
     if not load_relationships:
         return db_query
     return db_query.options(joinedload(MessageFile.message).load_only(Message.id, Message.message_type))
+
+
+@functools.lru_cache(maxsize=1)
+def get_chat_room_creation_relations_to_load() -> tuple:
+    return (
+        joinedload(Message.author),
+        joinedload(Message.photos),
+    )
