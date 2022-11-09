@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type, TypeVar, cast
 
-from sqlalchemy import delete, exists, func, insert, select, update
+from sqlalchemy import column, delete, exists, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql import Select
@@ -112,14 +112,23 @@ class SQLAlchemyDatabaseRepository(BaseDatabaseRepository):
             select_query = select_query.options(*_returning_options)
         return await self.__db_session.scalar(select_query)
 
-    async def delete(self, *args: Any, _returning_fields: Optional[tuple] = None) -> List[Model]:
+    async def delete(
+        self,
+        *args: Any,
+        _returning_fields: Optional[tuple[str]] = None,
+    ) -> Optional[List[Model]]:
         delete_query = delete(self.model).where(*args)
         if _returning_fields:
+            if 'id' not in _returning_fields:
+                _returning_fields += ('id',)
+            _returning_fields = tuple(map(column, _returning_fields))
             delete_query = delete_query.returning(*_returning_fields)
-        # select_query = select(self.model).from_statement(delete_query).execution_options(synchronize_session='fetch')
-        # results = await self.__db_session.scalars(select_query)
-        # return results.all()
-        await self.__db_session.scalars(delete_query)
+            select_query = (
+                select(self.model).from_statement(delete_query).execution_options(synchronize_session='fetch')
+            )
+            results = await self.__db_session.scalars(select_query)
+            return results.all()
+        await self.__db_session.execute(delete_query)
 
     async def get_one(
         self,

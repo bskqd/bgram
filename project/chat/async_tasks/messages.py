@@ -18,7 +18,7 @@ async def send_scheduled_message(job_context: dict, scheduled_message_id: int):
         messages_db_repository = provide_messages_db_repository(db_session)
         messages_retrieve_service = provide_messages_retrieve_service(messages_db_repository)
         message = await messages_retrieve_service.get_one_message(
-            db_query=get_message_db_query(Message.id == scheduled_message_id, load_relationships=False),
+            db_query=get_message_db_query(Message.id == scheduled_message_id),
         )
         if not message:
             return
