@@ -1,0 +1,49 @@
+services:
+  tests:
+    build:
+      dockerfile: Dockerfile-tests
+      context: .
+    restart: "no"
+    depends_on:
+      - tests-db
+      - tests-redis
+    env_file:
+      - .env.tests
+    links:
+      - tests-redis
+    volumes:
+      - ${MEDIA_PATH}:/var/bgram_tests/media
+    networks:
+      - test-app-network
+  tests-db:
+    image: postgres:14.1-alpine
+    restart: always
+    env_file:
+      - .env.tests
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+    ports:
+      - '5433:5432'
+    networks:
+      - test-app-network
+  tests-redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6380:6379'
+    expose:
+      - '6380'
+    networks:
+      - test-app-network
+
+networks:
+  test-app-network:
+volumes:
+  tests:
+    driver: local
+  redis:
+    driver: local
+  db:
+    driver: local

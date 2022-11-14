@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends
 router = APIRouter()
 
 
+# TODO: perform members count in db
 @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)
 async def list_chat_rooms_view(request_user: User = Depends(), paginator: ChatRoomsPaginatorABC = Depends()):
     await ChatRoomPermission(request_user).check_permissions()

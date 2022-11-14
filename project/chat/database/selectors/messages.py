@@ -45,7 +45,7 @@ def get_message_file_db_query(*args, load_relationships: bool = True) -> Select:
 
 
 @functools.lru_cache(maxsize=1)
-def get_chat_room_creation_relations_to_load() -> tuple:
+def get_message_creation_relations_to_load() -> tuple:
     return (
         joinedload(Message.author),
         joinedload(Message.photos),
