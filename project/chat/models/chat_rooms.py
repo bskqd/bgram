@@ -1,8 +1,8 @@
 from chat.constants import chat_rooms as chat_rooms_constants
 from core.database.base import Base
 from mixins.models import DateTimeABC, DescriptionABC, FileABC, IsActiveABC
-from sqlalchemy import Column, ForeignKey, Integer, String, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, event, func, select
+from sqlalchemy.orm import aliased, column_property, mapper, relationship
 
 __all__ = ['chatroom_members_association_table', 'ChatRoom', 'ChatRoomFile']
 
@@ -30,9 +30,30 @@ class ChatRoom(DateTimeABC, DescriptionABC, IsActiveABC):
     )
     messages = relationship('Message', back_populates='chat_room')
 
-    @property
-    def members_count(self):
-        return len(self.members)
+
+@event.listens_for(mapper, 'mapper_configured')
+def set_thread_count(mapper, cls) -> None:
+    if not issubclass(cls, ChatRoom):
+        return
+
+    nested_chat_room = aliased(ChatRoom)
+    members_count_subquery = (
+        select(
+            func.count(chatroom_members_association_table.c.member_type).label('members_count'),
+        )
+        .select_from(
+            chatroom_members_association_table,
+        )
+        .join(
+            nested_chat_room,
+        )
+        .group_by(
+            nested_chat_room.id,
+        )
+        .where(nested_chat_room.id == ChatRoom.id)
+        .scalar_subquery()
+    )
+    cls.members_count = column_property(members_count_subquery)
 
 
 class ChatRoomFile(FileABC):

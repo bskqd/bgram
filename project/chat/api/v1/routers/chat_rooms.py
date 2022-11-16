@@ -7,7 +7,10 @@ from chat.api.v1.schemas.chat_rooms import (
     ChatRoomUpdateSchema,
     PaginatedChatRoomsListSchema,
 )
-from chat.database.selectors.chat_rooms import get_chat_room_creation_relations_to_load, get_chat_rooms_db_query
+from chat.database.selectors.chat_rooms import (
+    get_chat_room_creation_relations_to_load,
+    get_many_chat_rooms_db_query_by_user,
+)
 from chat.models import ChatRoom
 from chat.services.chat_rooms import ChatRoomsCreateUpdateServiceABC, ChatRoomsRetrieveServiceABC
 from fastapi import APIRouter, Depends
@@ -15,11 +18,10 @@ from fastapi import APIRouter, Depends
 router = APIRouter()
 
 
-# TODO: perform members count in db
 @router.get('/chat_rooms', response_model=PaginatedChatRoomsListSchema)
 async def list_chat_rooms_view(request_user: User = Depends(), paginator: ChatRoomsPaginatorABC = Depends()):
     await ChatRoomPermission(request_user).check_permissions()
-    return await paginator.paginate(get_chat_rooms_db_query(request_user))
+    return await paginator.paginate(get_many_chat_rooms_db_query_by_user(request_user.id))
 
 
 @router.get('/chat_rooms/{chat_room_id}', response_model=ChatRoomDetailSchema)
@@ -30,8 +32,7 @@ async def retrieve_chat_room_view(
 ):
     await ChatRoomPermission(request_user).check_permissions()
     return await chat_rooms_retrieve_service.get_one_chat_room(
-        ChatRoom.id == chat_room_id,
-        db_query=get_chat_rooms_db_query(request_user),
+        db_query=get_many_chat_rooms_db_query_by_user(request_user.id, ChatRoom.id == chat_room_id),
     )
 
 
@@ -63,8 +64,7 @@ async def update_chat_room_view(
 ):
     await ChatRoomPermission(request_user).check_permissions()
     chat_room = await chat_rooms_retrieve_service.get_one_chat_room(
-        ChatRoom.id == chat_room_id,
-        db_query=get_chat_rooms_db_query(request_user),
+        db_query=get_many_chat_rooms_db_query_by_user(request_user.id, ChatRoom.id == chat_room_id),
     )
     chat_room_data: dict = chat_room_data.dict(exclude_unset=True)
     members_ids = chat_room_data.pop('members', None)
