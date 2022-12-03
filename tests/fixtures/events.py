@@ -1,9 +1,14 @@
-import pytest_asyncio
-from core.dependencies.providers import EventPublisher, provide_event_publisher
+import pytest
+from core.dependencies.providers import EventPublisher
 
 __all__ = ['event_publisher']
 
 
-@pytest_asyncio.fixture()
+class TestsEventPublisher(EventPublisher):
+    async def publish(self, *args):
+        pass
+
+
+@pytest.fixture(scope='session', autouse=True)
 def event_publisher() -> EventPublisher:
-    return provide_event_publisher()
+    return TestsEventPublisher()
