@@ -1,9 +1,10 @@
 import abc
 from typing import Optional
 
+from accounts.database.repository.users import UsersDatabaseRepositoryABC
 from accounts.models import User
+from accounts.services.exceptions.users import UserCreationException
 from core.config import SettingsABC
-from core.database.repository import BaseDatabaseRepository
 from core.services.files import FilesService, FilesServiceABC
 from sqlalchemy.sql import Select
 
@@ -33,7 +34,7 @@ class UsersRetrieveServiceABC(abc.ABC):
 
 
 class UsersRetrieveService(UsersRetrieveServiceABC):
-    def __init__(self, db_repository: BaseDatabaseRepository):
+    def __init__(self, db_repository: UsersDatabaseRepositoryABC):
         self.db_repository = db_repository
 
     async def get_one_user(
@@ -67,17 +68,20 @@ class UsersCreateUpdateServiceABC(abc.ABC):
 
 
 class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
-    def __init__(self, db_repository: BaseDatabaseRepository, settings: SettingsABC):
+    def __init__(self, db_repository: UsersDatabaseRepositoryABC, settings: SettingsABC):
         self.db_repository = db_repository
         self.settings = settings
 
     async def create_user(self, nickname: str, email: str, password: str, **kwargs) -> User:
-        user = await self.db_repository.create(
-            nickname=nickname,
-            email=email,
-            password=self._hash_password(password),
-            **kwargs,
-        )
+        try:
+            user = await self.db_repository.create(
+                nickname=nickname,
+                email=email,
+                password=self._hash_password(password),
+                **kwargs,
+            )
+        except Exception:
+            raise UserCreationException
         await self.db_repository.commit()
         await self.db_repository.refresh(user)
         return user
@@ -97,6 +101,21 @@ class UsersCreateUpdateService(UsersCreateUpdateServiceABC):
 
     def _hash_password(self, plain_text_password: str) -> str:
         return self.settings.PWD_CONTEXT.hash(plain_text_password)
+
+
+class UsersDeleteServiceABC(abc.ABC):
+    @abc.abstractmethod
+    async def delete_user(self, user_id: int):
+        pass
+
+
+class UsersDeleteService(UsersDeleteServiceABC):
+    def __init__(self, db_repository: UsersDatabaseRepositoryABC):
+        self.db_repository = db_repository
+
+    async def delete_user(self, user_id: int):
+        await self.db_repository.delete(User.id == user_id)
+        await self.db_repository.commit()
 
 
 class UserFilesServiceABC(FilesServiceABC, abc.ABC):

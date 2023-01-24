@@ -44,3 +44,8 @@ class InvalidUserIdException(HTTPException):
             detail='There is no active user found with such user_id.',
             headers={'WWW-Authenticate': 'Bearer'},
         )
+
+
+class ConfirmationTokenCreationException(Exception):
+    def __init__(self):
+        super().__init__('Error during the user confirmation token creation')

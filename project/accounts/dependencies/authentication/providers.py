@@ -11,7 +11,8 @@ from accounts.services.authentication.authentication import (
     EmailConfirmationTokensCreateService,
 )
 from accounts.services.authentication.jwt_authentication import JWTAuthenticationService, JWTAuthenticationServiceABC
-from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
+from accounts.services.authentication.registration import UsersRegistrationService, UsersRegistrationServiceABC
+from accounts.services.users import UsersCreateUpdateServiceABC, UsersDeleteServiceABC, UsersRetrieveServiceABC
 from core.config import SettingsABC
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,3 +47,15 @@ def provide_confirmation_token_confirm_service(
     settings: SettingsABC,
 ) -> ConfirmationTokensConfirmServiceABC:
     return EmailConfirmationTokensConfirmService(users_db_repository, users_create_update_service, settings)
+
+
+def provide_users_registration_service(
+    users_create_update_service: UsersCreateUpdateServiceABC,
+    users_delete_service: UsersDeleteServiceABC,
+    confirmation_token_create_service: ConfirmationTokensCreateServiceABC,
+) -> UsersRegistrationServiceABC:
+    return UsersRegistrationService(
+        users_create_update_service,
+        users_delete_service,
+        confirmation_token_create_service,
+    )

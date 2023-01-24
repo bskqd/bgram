@@ -1,16 +1,17 @@
 from accounts.api.v1.schemas import authentication as authorization_schemas
 from accounts.api.v1.schemas import users as user_schemas
 from accounts.models import User
-from accounts.services.authentication.authentication import (
-    ConfirmationTokensConfirmServiceABC,
-    ConfirmationTokensCreateServiceABC,
-)
+from accounts.services.authentication.authentication import ConfirmationTokensConfirmServiceABC
 from accounts.services.authentication.jwt_authentication import JWTAuthenticationServiceABC
-from accounts.services.exceptions.authentication import InvalidConfirmationTokenException
-from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
+from accounts.services.authentication.registration import UsersRegistrationServiceABC
+from accounts.services.exceptions.authentication import (
+    ConfirmationTokenCreationException,
+    InvalidConfirmationTokenException,
+)
+from accounts.services.exceptions.users import UserCreationException
+from accounts.services.users import UsersRetrieveServiceABC
 from core.config import SettingsABC
 from fastapi import APIRouter, Depends, HTTPException
-from notifications.async_tasks.email import send_email
 from sqlalchemy import true
 
 router = APIRouter()
@@ -19,19 +20,16 @@ router = APIRouter()
 @router.post('/registration')
 async def registration_view(
     user_data: user_schemas.UserCreateSchema,
-    settings: SettingsABC = Depends(),
-    users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
-    confirmation_tokens_create_service: ConfirmationTokensCreateServiceABC = Depends(),
+    users_registration_service: UsersRegistrationServiceABC = Depends(),
 ) -> str:
     user_data = user_data.dict()
-    user_data['is_active'] = False
     nickname = user_data.pop('nickname')
     email = user_data.pop('email')
     password = user_data.pop('password')
-    user = await users_create_update_service.create_user(nickname, email, password, **user_data)
-    token = await confirmation_tokens_create_service.create_confirmation_token(user)
-    email_data = {'link': f'{settings.HOST_DOMAIN}/accounts/confirm_email?user_id={user.id}?token={token.token}'}
-    await send_email('email_confirmation.html', 'Please confirm your email', email, template_body=email_data)
+    try:
+        await users_registration_service.registrate_user(nickname, email, password, **user_data)
+    except (UserCreationException, ConfirmationTokenCreationException) as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return 'Registration is successful, confirm your email.'
 
 

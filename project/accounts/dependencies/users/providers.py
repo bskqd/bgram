@@ -9,6 +9,8 @@ from accounts.services.users import (
     UserFilesServiceABC,
     UsersCreateUpdateService,
     UsersCreateUpdateServiceABC,
+    UsersDeleteService,
+    UsersDeleteServiceABC,
     UsersRetrieveService,
     UsersRetrieveServiceABC,
 )
@@ -33,6 +35,10 @@ def provide_users_create_update_service(
     settings: SettingsABC,
 ) -> UsersCreateUpdateServiceABC:
     return UsersCreateUpdateService(db_repository, settings)
+
+
+def provide_users_delete_service(db_repository: UsersDatabaseRepositoryABC) -> UsersDeleteServiceABC:
+    return UsersDeleteService(db_repository)
 
 
 def provide_user_files_service(db_repository: UserFilesDatabaseRepositoryABC) -> UserFilesServiceABC:

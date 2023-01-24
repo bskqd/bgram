@@ -1,8 +1,12 @@
 import abc
 from datetime import datetime, timedelta
 
+from accounts.database.repository.authentication import ConfirmationTokenDatabaseRepositoryABC
 from accounts.models import EmailConfirmationToken, User
-from accounts.services.exceptions.authentication import InvalidConfirmationTokenException
+from accounts.services.exceptions.authentication import (
+    ConfirmationTokenCreationException,
+    InvalidConfirmationTokenException,
+)
 from accounts.services.users import UsersCreateUpdateServiceABC
 from core.config import SettingsABC
 from core.database.repository import BaseDatabaseRepository
@@ -24,12 +28,15 @@ class ConfirmationTokensCreateServiceABC(abc.ABC):
 
 
 class EmailConfirmationTokensCreateService(ConfirmationTokensCreateServiceABC):
-    def __init__(self, db_repository: BaseDatabaseRepository):
+    def __init__(self, db_repository: ConfirmationTokenDatabaseRepositoryABC):
         self.db_repository = db_repository
 
     async def create_confirmation_token(self, user: User) -> EmailConfirmationToken:
         token = EmailConfirmationToken(user=user)
-        token = await self.db_repository.create_from_object(token)
+        try:
+            token = await self.db_repository.create_from_object(token)
+        except Exception:
+            raise ConfirmationTokenCreationException
         await self.db_repository.commit()
         await self.db_repository.refresh(token)
         return token

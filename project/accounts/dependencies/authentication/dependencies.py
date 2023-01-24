@@ -6,6 +6,7 @@ from accounts.dependencies.authentication.providers import (
     provide_confirmation_token_create_service,
     provide_confirmation_token_db_repository,
     provide_jwt_authentication_service,
+    provide_users_registration_service,
 )
 from accounts.models import User
 from accounts.services.authentication.authentication import (
@@ -14,7 +15,8 @@ from accounts.services.authentication.authentication import (
     ConfirmationTokensCreateServiceABC,
 )
 from accounts.services.authentication.jwt_authentication import JWTAuthenticationServiceABC
-from accounts.services.users import UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
+from accounts.services.authentication.registration import UsersRegistrationServiceABC
+from accounts.services.users import UsersCreateUpdateServiceABC, UsersDeleteServiceABC, UsersRetrieveServiceABC
 from core.config import SettingsABC
 from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +32,7 @@ class AuthorizationDependenciesOverrides:
             ConfirmationTokenDatabaseRepositoryABC: cls.get_confirmation_token_db_repository,
             ConfirmationTokensCreateServiceABC: cls.get_confirmation_token_create_service,
             ConfirmationTokensConfirmServiceABC: cls.get_confirmation_token_confirm_service,
+            UsersRegistrationServiceABC: cls.get_users_registration_service,
         }
 
     @staticmethod
@@ -72,3 +75,15 @@ class AuthorizationDependenciesOverrides:
         settings: SettingsABC = Depends(),
     ) -> ConfirmationTokensConfirmServiceABC:
         return provide_confirmation_token_confirm_service(users_db_repository, users_create_update_service, settings)
+
+    @staticmethod
+    async def get_users_registration_service(
+        users_create_update_service: UsersCreateUpdateServiceABC = Depends(),
+        users_delete_service: UsersDeleteServiceABC = Depends(),
+        confirmation_token_create_service: ConfirmationTokensCreateServiceABC = Depends(),
+    ) -> UsersRegistrationServiceABC:
+        return provide_users_registration_service(
+            users_create_update_service,
+            users_delete_service,
+            confirmation_token_create_service,
+        )

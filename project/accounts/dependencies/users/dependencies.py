@@ -6,9 +6,15 @@ from accounts.dependencies.users.providers import (
     provide_user_files_service,
     provide_users_create_update_service,
     provide_users_db_repository,
+    provide_users_delete_service,
     provide_users_retrieve_service,
 )
-from accounts.services.users import UserFilesServiceABC, UsersCreateUpdateServiceABC, UsersRetrieveServiceABC
+from accounts.services.users import (
+    UserFilesServiceABC,
+    UsersCreateUpdateServiceABC,
+    UsersDeleteServiceABC,
+    UsersRetrieveServiceABC,
+)
 from core.config import SettingsABC
 from core.filters import FilterSet
 from core.pagination import DefaultPaginationClass
@@ -24,6 +30,7 @@ class UsersDependenciesOverrides:
             UserFilesDatabaseRepositoryABC: cls.get_user_files_db_repository,
             UsersRetrieveServiceABC: cls.get_users_retrieve_service,
             UsersCreateUpdateServiceABC: cls.get_users_create_update_service,
+            UsersDeleteServiceABC: cls.get_users_delete_service,
             UsersPaginatorABC: cls.get_users_paginator,
             UserFilterSetABC: cls.get_users_filterset,
             UserFilesServiceABC: cls.get_user_files_service,
@@ -49,6 +56,10 @@ class UsersDependenciesOverrides:
         settings: SettingsABC = Depends(),
     ) -> UsersCreateUpdateServiceABC:
         return provide_users_create_update_service(db_repository, settings)
+
+    @staticmethod
+    async def get_users_delete_service(db_repository: UsersDatabaseRepositoryABC = Depends()) -> UsersDeleteServiceABC:
+        return provide_users_delete_service(db_repository)
 
     @staticmethod
     async def get_user_files_service(db_repository: UserFilesDatabaseRepositoryABC = Depends()) -> UserFilesServiceABC:
