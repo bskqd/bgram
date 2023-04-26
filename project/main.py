@@ -5,7 +5,7 @@ from accounts.dependencies.users.dependencies import UsersDependenciesOverrides
 from chat.dependencies.chat_rooms.dependencies import ChatRoomsDependenciesOverrides
 from chat.dependencies.messages.dependencies import MessagesDependenciesOverrides
 from core.config import SettingsABC
-from core.contrib.redis import redis_client
+from core.contrib.redis import RedisClientProvider
 from core.database.base import provide_db_sessionmaker
 from core.dependencies.dependencies import FastapiDependenciesOverrides
 from core.dependencies.providers import provide_settings
@@ -56,5 +56,5 @@ async def open_connections():
 @app.on_event('shutdown')
 async def close_connections():
     provide_db_sessionmaker().close_all()
-    await redis_client.close()
+    await RedisClientProvider.provide_redis_client().close()
     await app.state.arq_redis_pool.close()

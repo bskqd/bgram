@@ -2,7 +2,7 @@ import functools
 from typing import AsyncIterator
 
 from core.config import Settings, SettingsABC
-from core.contrib.redis import redis_client
+from core.contrib.redis import RedisClientProvider
 
 
 @functools.lru_cache(maxsize=1)
@@ -27,8 +27,8 @@ class EventReceiver:
 
 
 def provide_event_publisher() -> EventPublisher:
-    return redis_client
+    return RedisClientProvider.provide_redis_client()
 
 
 def provide_event_receiver() -> EventReceiver:
-    return redis_client.pubsub()
+    return RedisClientProvider.provide_redis_client().pubsub()
