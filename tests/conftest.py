@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 
 import pytest_asyncio
 from dotenv import load_dotenv
@@ -21,7 +22,13 @@ async def init_models():
         await conn.run_sync(metadata.create_all)
 
 
-asyncio.run(init_models())
+counter = 0
+while counter <= 3:
+    try:
+        asyncio.run(init_models())
+    except Exception:
+        time.sleep(5)
+        counter += 1
 
 
 @pytest_asyncio.fixture(scope='session', autouse=True)

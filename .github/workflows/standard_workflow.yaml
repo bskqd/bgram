@@ -49,4 +49,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run tests
-        run: docker-compose -f docker-compose-tests.yaml up -d --build
+        run: docker-compose --env-file .env.tests -f docker-compose-tests.yaml up -d --build --renew-anon-volumes

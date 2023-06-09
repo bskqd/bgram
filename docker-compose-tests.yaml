@@ -11,6 +11,7 @@ services:
       - .env.tests
     links:
       - tests-redis
+      - tests-db
     volumes:
       - ${MEDIA_PATH}:/var/bgram_tests/media
     networks:
@@ -18,21 +19,21 @@ services:
   tests-db:
     image: postgres:14.1-alpine
     restart: always
-    env_file:
-      - .env.tests
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DATABASE=${POSTGRES_DATABASE}
-    ports:
-      - '5433:5432'
+      - PGPORT=5433
+    env_file:
+      - .env.tests
+    expose:
+      - '5433'
     networks:
       - test-app-network
   tests-redis:
     image: redis:6.2-alpine
     restart: always
-    ports:
-      - '6380:6379'
+    command: --port 6380
     expose:
       - '6380'
     networks:
@@ -42,8 +43,4 @@ networks:
   test-app-network:
 volumes:
   tests:
-    driver: local
-  redis:
-    driver: local
-  db:
     driver: local
