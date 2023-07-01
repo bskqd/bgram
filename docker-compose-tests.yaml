@@ -22,7 +22,7 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DATABASE=${POSTGRES_DATABASE}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
       - PGPORT=5433
     env_file:
       - .env.tests
@@ -41,6 +41,3 @@ services:
 
 networks:
   test-app-network:
-volumes:
-  tests:
-    driver: local

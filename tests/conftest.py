@@ -22,6 +22,7 @@ async def init_models():
         await conn.run_sync(metadata.create_all)
 
 
+# waiting for db to be ready to accept connections
 counter = 0
 while counter <= 3:
     try:
