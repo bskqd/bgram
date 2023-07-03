@@ -15,4 +15,4 @@ WORKDIR /project
 
 USER root:root
 
-CMD ["sh", "-c", "gunicorn main:app --config ../gunicorn.conf.py ; alembic upgrade head"]
+CMD ["sh", "-c", "alembic upgrade head ; gunicorn main:app --config ../gunicorn.conf.py"]

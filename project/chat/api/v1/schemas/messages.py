@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from mixins.schemas import PaginatedResponseSchemaMixin, PhotosFieldSchemaMixin
 from pydantic import BaseModel
@@ -30,5 +30,5 @@ class ListMessagesSchema(PhotosFieldSchemaMixin):
         orm_mode = True
 
 
-class PaginatedListMessagesSchema(PaginatedResponseSchemaMixin):
-    data: List[ListMessagesSchema]
+class PaginatedListMessagesSchema(PaginatedResponseSchemaMixin[ListMessagesSchema]):
+    pass

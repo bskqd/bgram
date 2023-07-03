@@ -48,7 +48,7 @@ class DefaultPaginationClass(PaginationClassABC):
         total_db_objects_count = await self.db_objects_retriever_strategy.count(db_query)
         db_query = db_query.offset(db_query_offset).limit(db_query_limit)
         db_objects = await self.db_objects_retriever_strategy.get_many(db_query)
-        total_pages = math.ceil(total_db_objects_count / page_size)
+        total_pages = math.ceil(total_db_objects_count / page_size) if total_db_objects_count >= 1 else 1
         previous_page_url, next_page_url = self.get_previous_and_next_page_urls(
             current_page_number,
             db_query_limit,

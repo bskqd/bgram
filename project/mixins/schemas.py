@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Generic, List, Optional, TypeVar
 
 from core.dependencies.providers import provide_settings
 from pydantic import BaseModel, validator
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class FilesSchema(BaseModel):
@@ -32,10 +34,11 @@ class PhotosFieldSchemaMixin(BaseModel):
     photos: List[FilesSchema]
 
 
-class PaginatedResponseSchemaMixin(BaseModel):
+class PaginatedResponseSchemaMixin(Generic[T], BaseModel):
     count: int
     total_pages: int
     current_page: int
     page_size: int
     next: Optional[str]
     previous: Optional[str]
+    data: List[T]

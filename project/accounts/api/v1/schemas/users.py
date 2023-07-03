@@ -41,5 +41,5 @@ class UsersListSchema(UserBaseSchema, PhotosFieldSchemaMixin):
         return [chat_room.id for chat_room in value]
 
 
-class PaginatedUsersListSchema(PaginatedResponseSchemaMixin):
-    data: List[UsersListSchema]
+class PaginatedUsersListSchema(PaginatedResponseSchemaMixin[UsersListSchema]):
+    pass

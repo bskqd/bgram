@@ -38,8 +38,8 @@ class ChatRoomsListSchema(ChatRoomBaseSchema, mixins_schemas.PhotosFieldSchemaMi
         orm_mode = True
 
 
-class PaginatedChatRoomsListSchema(PaginatedResponseSchemaMixin):
-    data: List[ChatRoomsListSchema]
+class PaginatedChatRoomsListSchema(PaginatedResponseSchemaMixin[ChatRoomsListSchema]):
+    pass
 
 
 class ChatRoomDetailSchema(ChatRoomsListSchema):
