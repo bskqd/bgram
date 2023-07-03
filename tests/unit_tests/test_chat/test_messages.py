@@ -20,8 +20,3 @@ async def test_create_scheduled_message(messages_create_update_delete_service: M
     assert message.text == 'test message text'
     assert message.message_type == MessagesTypeEnum.SCHEDULED
     assert message.scheduler_task_id
-
-
-@pytest.mark.asyncio
-async def test_fail():
-    raise Exception('Test Error')
