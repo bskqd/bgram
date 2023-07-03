@@ -1,0 +1,1 @@
+Run tests using command: `docker-compose -f docker-compose-tests.yaml down -v && docker-compose --env-file .env.tests -f docker-compose-tests.yaml up -d --build`
